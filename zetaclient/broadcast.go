@@ -38,7 +38,7 @@ func (b *MetachainBridge) Broadcast(msgs ...stypes.Msg) (string, error) {
 			b.seqNumber = seqNumber
 		}
 	}
-	//b.logger.Debug().Uint64("account_number", b.accountNumber).Uint64("sequence_number", b.seqNumber).Msg("account info")
+	//b.logger.Info().Uint64("account_number", b.accountNumber).Uint64("sequence_number", b.seqNumber).Msg("account info")
 
 	flags := flag.NewFlagSet("zetacore", 0)
 
@@ -54,6 +54,8 @@ func (b *MetachainBridge) Broadcast(msgs ...stypes.Msg) (string, error) {
 	}
 	builder.SetGasLimit(300000000)
 	//fmt.Printf("signing from name: %s\n", ctx.GetFromName())
+	//b.logger.Info().Msgf("signing from %s", ctx.GetFromName())
+
 	err = clienttx.Sign(factory, ctx.GetFromName(), builder, true)
 	if err != nil {
 		return "", err

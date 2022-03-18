@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 
 if [[ -z "$PRIVKEY" ]]; then
   echo "Must provide PRIVKEY in environment" 1>&2

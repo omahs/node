@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/rs/zerolog"
@@ -32,6 +33,18 @@ var ALL_CHAINS = []*ChainETHish{
 	//},
 }
 
+func newTerraChain() *ChainCosmos {
+	return &ChainCosmos{
+		name:    common.Chain("TERRA"),
+		chainID: "Bombay-12", // TODO:  from config
+		nodeURI: "https://bombay-lcd.terra.dev:443",
+
+		MPI_CONTRACT: "539418820ACB4C2F1C7A6CA7CF9A704A6E029D2707BDA09C42EFD349363BCDF2",
+		//MPI_CONTRACT:                 "dce047a39af1b61935ae421ba883d36f0b10f023",
+		DEFAULT_DESTINATION_CONTRACT: "",
+	}
+}
+
 func startAllChainListeners() {
 	for _, chain := range ALL_CHAINS {
 		chain.Start()
@@ -53,13 +66,18 @@ func main() {
 		log.Info().Msg("Starting all chains")
 		startAllChainListeners()
 	} else {
-		log.Info().Msg(fmt.Sprintf("Running 1 chain only: %s", *onlyChain))
-		chain, err := FindChainByName(*onlyChain)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Chain not found")
-			os.Exit(1)
+		if strings.ToLower(*onlyChain) == "terra" {
+			terra := newTerraChain()
+			terra.Start()
+		} else {
+			log.Info().Msg(fmt.Sprintf("Running 1 chain only: %s", *onlyChain))
+			chain, err := FindChainByName(*onlyChain)
+			if err != nil {
+				log.Fatal().Err(err).Msg("Chain not found")
+				os.Exit(1)
+			}
+			chain.Start()
 		}
-		chain.Start()
 	}
 
 	ch3 := make(chan os.Signal, 1)

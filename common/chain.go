@@ -12,6 +12,7 @@ var (
 	ETHChain     = Chain("ETH")
 	POLYGONChain = Chain("POLYGON")
 	ZETAChain    = Chain("ZETA")
+	TERRAChain   = Chain("TERRA")
 
 	SigningAlgoSecp256k1 = SigninAlgo("secp256k1")
 	SigningAlgoEd25519   = SigninAlgo("ed25519")

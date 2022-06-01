@@ -53,7 +53,7 @@ func (k msgServer) SendVoter(goCtx context.Context, msg *types.MsgSendVoter) (*t
 
 	if hasSuperMajorityValidators(len(send.Signers), validators) {
 		send.LastUpdateTimestamp = ctx.BlockHeader().Time.Unix()
-		k.UpdateTxList(ctx, &send)
+		//k.UpdateTxList(ctx, &send)
 
 		send.FinalizedMetaHeight = uint64(ctx.BlockHeader().Height)
 		send.Status = types.SendStatus_PendingOutbound

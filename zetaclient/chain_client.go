@@ -475,7 +475,7 @@ func (chainOb *ChainObserver) observeChain() error {
 				log.Err(err).Msg("error posting to meta core")
 				continue
 			}
-			log.Debug().Msgf("LockSend detected: PostSend metahash: %s", metaHash)
+			log.Info().Msgf("PostSend metahash: %s", metaHash)
 		}
 	}
 

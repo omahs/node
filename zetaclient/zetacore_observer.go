@@ -4,13 +4,14 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
-	"github.com/rs/zerolog"
 	"math/big"
 	"math/rand"
 	"os"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog"
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/rs/zerolog/log"
@@ -342,7 +343,7 @@ SIGNLOOP:
 			log.Info().Msg("breaking SignOutBoundTx loop: outbound already processed")
 			break SIGNLOOP
 		default:
-			if co.clientMap[toChain].MinNonce == int(send.Nonce) {
+			if co.clientMap[toChain].MinNonce == int(send.Nonce) && co.clientMap[toChain].MaxNonce > int(send.Nonce)+5 {
 				log.Warn().Msgf("this signer is likely blocking subsequent txs! nonce %d", send.Nonce)
 				signInterval = 32 * time.Second
 			}
@@ -394,19 +395,19 @@ SIGNLOOP:
 								co.fileLogger.Err(err).Msgf("Broadcast success: nonce %d chain %s outTxHash %s", send.Nonce, toChain, outTxHash)
 								break // break the retry loop
 							} else if strings.Contains(err.Error(), "nonce too low") {
-								log.Info().Msgf("nonce too low! this might be a unnecessary keysign. increase re-try interval and awaits outTx confirmation")
+								log.Warn().Err(err).Msgf("nonce too low! this might be a unnecessary keysign. increase re-try interval and awaits outTx confirmation")
 								co.fileLogger.Err(err).Msgf("Broadcast nonce too low: nonce %d chain %s outTxHash %s; increase re-try interval", send.Nonce, toChain, outTxHash)
 								break
 							} else if strings.Contains(err.Error(), "replacement transaction underpriced") {
-								log.Err(err).Msgf("Broadcast replacement: nonce %d chain %s outTxHash %s", send.Nonce, toChain, outTxHash)
+								log.Warn().Err(err).Msgf("Broadcast replacement: nonce %d chain %s outTxHash %s", send.Nonce, toChain, outTxHash)
 								co.fileLogger.Err(err).Msgf("Broadcast replacement: nonce %d chain %s outTxHash %s", send.Nonce, toChain, outTxHash)
 								break
 							} else if strings.Contains(err.Error(), "already known") { // this is error code from QuickNode
-								log.Err(err).Msgf("Broadcast duplicates: nonce %d chain %s outTxHash %s", send.Nonce, toChain, outTxHash)
+								log.Warn().Err(err).Msgf("Broadcast duplicates: nonce %d chain %s outTxHash %s", send.Nonce, toChain, outTxHash)
 								co.fileLogger.Err(err).Msgf("Broadcast duplicates: nonce %d chain %s outTxHash %s", send.Nonce, toChain, outTxHash)
 								break
 							} else { // most likely an RPC error, such as timeout or being rate limited. Exp backoff retry
-								log.Err(err).Msgf("Broadcast error: nonce %d chain %s outTxHash %s; retring...", send.Nonce, toChain, outTxHash)
+								log.Error().Err(err).Msgf("Broadcast error: nonce %d chain %s outTxHash %s; retring...", send.Nonce, toChain, outTxHash)
 								co.fileLogger.Err(err).Msgf("Broadcast error: nonce %d chain %s outTxHash %s; retrying...", send.Nonce, toChain, outTxHash)
 								time.Sleep(backOff)
 							}

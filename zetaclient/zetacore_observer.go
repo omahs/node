@@ -4,14 +4,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"github.com/rs/zerolog"
 	"math/big"
 	"math/rand"
 	"os"
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/rs/zerolog"
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/rs/zerolog/log"

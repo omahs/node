@@ -13,10 +13,11 @@ func SetupHandlers(app *App) {
 	app.UpgradeKeeper.SetUpgradeHandler(releaseVersion, func(ctx sdk.Context, plan types.Plan, vm m.VersionMap) (m.VersionMap, error) {
 		app.Logger().Info("Running upgrade handler for " + releaseVersion)
 		fmt.Println("Version map :", vm)
-		for moduleName, _ := range vm {
-			vm[moduleName] = app.mm.Modules[moduleName].ConsensusVersion()
+		for moduleName, module := range app.mm.Modules {
+			vm[moduleName] = module.ConsensusVersion()
 			fmt.Println("Setting Consensus Version : ", moduleName, vm[moduleName])
 		}
+		fmt.Println("Version map :", vm)
 		return app.mm.RunMigrations(ctx, app.configurator, vm)
 	})
 

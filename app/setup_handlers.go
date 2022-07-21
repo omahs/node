@@ -12,6 +12,9 @@ const releaseVersion = "0.2.1"
 func SetupHandlers(app *App) {
 	app.UpgradeKeeper.SetUpgradeHandler(releaseVersion, func(ctx sdk.Context, plan types.Plan, vm m.VersionMap) (m.VersionMap, error) {
 		app.Logger().Info("Running upgrade handler for " + releaseVersion)
+		for moduleName, _ := range vm {
+			vm[moduleName] = app.mm.Modules[moduleName].ConsensusVersion()
+		}
 		return app.mm.RunMigrations(ctx, app.configurator, vm)
 	})
 

@@ -29,6 +29,12 @@ clean-dir:
 
 all: install
 
+init-run: init run
+init:
+	./localnet/zetachain/standalone-network/init.sh
+run:
+	./localnet/zetachain/standalone-network/run.sh
+
 
 test-coverage:
 	@go test ${TEST_BUILD_FLAGS} -v -coverprofile coverage.out ${TEST_DIR}

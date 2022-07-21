@@ -410,7 +410,7 @@ func New(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibchost.ModuleName,
-		transferModule.Name(),
+		ibctransfertypes.ModuleName,
 		metacoremoduletypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(

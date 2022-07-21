@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	m "github.com/cosmos/cosmos-sdk/types/module"
@@ -14,6 +15,7 @@ func SetupHandlers(app *App) {
 		app.Logger().Info("Running upgrade handler for " + releaseVersion)
 		for moduleName, _ := range vm {
 			vm[moduleName] = app.mm.Modules[moduleName].ConsensusVersion()
+			fmt.Println("Setting Consensus Version : ", moduleName, vm[moduleName])
 		}
 		return app.mm.RunMigrations(ctx, app.configurator, vm)
 	})

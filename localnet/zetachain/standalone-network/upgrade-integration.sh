@@ -42,6 +42,8 @@ rm -rf $GOPATH/bin/old/zetacored
 rm -rf $GOPATH/bin/new/zetacored
 
 # Setup old binary and start chain
+mkdir -p mkdir $GOPATH/bin/old
+mkdir -p mkdir $GOPATH/bin/new
 
 git checkout $CurrentBinary
 make install

@@ -1,10 +1,10 @@
 package app
 
 import (
-	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	m "github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	zetatypes "github.com/zeta-chain/zetacore/x/zetacore/types"
 )
 
 const releaseVersion = "0.2.1"
@@ -12,12 +12,10 @@ const releaseVersion = "0.2.1"
 func SetupHandlers(app *App) {
 	app.UpgradeKeeper.SetUpgradeHandler(releaseVersion, func(ctx sdk.Context, plan types.Plan, vm m.VersionMap) (m.VersionMap, error) {
 		app.Logger().Info("Running upgrade handler for " + releaseVersion)
-		fmt.Println("Version map :", vm)
 		for moduleName, module := range app.mm.Modules {
 			vm[moduleName] = module.ConsensusVersion()
-			fmt.Println("Setting Consensus Version : ", moduleName, vm[moduleName])
 		}
-		fmt.Println("Version map :", vm)
+		vm[zetatypes.ModuleName] = vm[zetatypes.ModuleName] - 1
 		return app.mm.RunMigrations(ctx, app.configurator, vm)
 	})
 

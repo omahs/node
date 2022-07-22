@@ -77,7 +77,7 @@ mkdir -p $DAEMON_HOME/cosmovisor/upgrades/$UpgradeName/bin
 # Setup new binary
 git checkout $NewBinary
 rm -rf $GOPATH/bin/zetacored
-make install
+make install-zetacore
 cp $GOPATH/bin/zetacored $GOPATH/bin/new/
 
 
@@ -105,4 +105,3 @@ zetacored query gov proposal 1
 
 tail -f zetanode.log
 
-#yes Y | zetacored tx gov submit-proposal software-upgrade 0.9.14 --from zeta --deposit 100000000stake --upgrade-height 30 --title 0.9.14 --description 0.9.14 --keyring-backend test --chain-id localnet

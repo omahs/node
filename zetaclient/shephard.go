@@ -182,11 +182,11 @@ SIGNLOOP:
 			timeSinceStart := time.Since(time.Unix(startTimeUnix, 0))
 			srcChainID := config.Chains[send.SenderChain].ChainID
 			if send.Status == types.SendStatus_PendingRevert {
-				log.Info().Msgf("SignRevertTx: %s => %s, nonce %d, time since start %d", send.SenderChain, toChain, send.Nonce, send.Index, timeSinceStart)
+				log.Info().Msgf("SignRevertTx: %s => %s, nonce %d, time since start %s", send.SenderChain, toChain, send.Nonce, timeSinceStart)
 				toChainID := config.Chains[send.ReceiverChain].ChainID
 				tx, err = signer.SignRevertTx(ethcommon.HexToAddress(send.Sender), srcChainID, to.Bytes(), toChainID, amount, gasLimit, message, sendhash, send.Nonce, gasprice)
 			} else if send.Status == types.SendStatus_PendingOutbound {
-				log.Info().Msgf("SignOutboundTx: %s => %s, nonce %d, time since start %d", send.SenderChain, toChain, send.Nonce, send.Index, timeSinceStart)
+				log.Info().Msgf("SignOutboundTx: %s => %s, nonce %d, time since start %s", send.SenderChain, toChain, send.Nonce, timeSinceStart)
 				tx, err = signer.SignOutboundTx(ethcommon.HexToAddress(send.Sender), srcChainID, to, amount, gasLimit, message, sendhash, send.Nonce, gasprice)
 			}
 			if err != nil {

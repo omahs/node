@@ -161,91 +161,85 @@ func (co *CoreObserver) shepherdSend(send *types.Send) {
 		}
 	}()
 
-	// The following keysign loop tries to sign outbound tx until the following conditions are met:
-	// 1. zetacore /zeta-chain/send/<sendHash> endpoint returns a changed status
-	// 2. outTx is confirmed to be successfully or failed
-	signTicker := time.NewTicker(time.Second)
-	signInterval := 128 * time.Second // minimum gap between two keysigns
-	lastSignTime := time.Unix(1, 0)
+	var signInterval int64 = 72 //  gap between two keysigns
+	var startDelay int64 = 12   // maximum seconds delay before the first keysign
+	startTimeUnix := (send.LastUpdateTimestamp + startDelay) / startDelay * startDelay
+	//  if all zetaclients start within startDelay of each other,
+	// and their clocks are roughly in sync, then they would arrive at the same time after sleep.
+	time.Sleep(time.Unix(startTimeUnix, 0).Sub(time.Now()))
 SIGNLOOP:
-	for range signTicker.C {
+	for {
 		select {
 		case <-signloopDone:
 			log.Info().Msg("breaking SignOutBoundTx loop: outbound already processed")
 			break SIGNLOOP
 		default:
-			if co.clientMap[toChain].MinNonce == int(send.Nonce) && co.clientMap[toChain].MaxNonce > int(send.Nonce)+5 {
-				log.Warn().Msgf("this signer is likely blocking subsequent txs! nonce %d", send.Nonce)
-				signInterval = 32 * time.Second
+			included, confirmed, _ := co.clientMap[toChain].IsSendOutTxProcessed(send.Index, int(send.Nonce))
+			if included || confirmed {
+				log.Info().Msgf("sendHash %s already confirmed; skip it", send.Index)
+				break SIGNLOOP
 			}
-			tnow := time.Now()
-			if tnow.Before(lastSignTime.Add(signInterval)) {
+			timeSinceStart := time.Since(time.Unix(startTimeUnix, 0))
+			srcChainID := config.Chains[send.SenderChain].ChainID
+			if send.Status == types.SendStatus_PendingRevert {
+				log.Info().Msgf("SignRevertTx: %s => %s, nonce %d, time since start %d", send.SenderChain, toChain, send.Nonce, send.Index, timeSinceStart)
+				toChainID := config.Chains[send.ReceiverChain].ChainID
+				tx, err = signer.SignRevertTx(ethcommon.HexToAddress(send.Sender), srcChainID, to.Bytes(), toChainID, amount, gasLimit, message, sendhash, send.Nonce, gasprice)
+			} else if send.Status == types.SendStatus_PendingOutbound {
+				log.Info().Msgf("SignOutboundTx: %s => %s, nonce %d, time since start %d", send.SenderChain, toChain, send.Nonce, send.Index, timeSinceStart)
+				tx, err = signer.SignOutboundTx(ethcommon.HexToAddress(send.Sender), srcChainID, to, amount, gasLimit, message, sendhash, send.Nonce, gasprice)
+			}
+			if err != nil {
+				log.Warn().Err(err).Msgf("SignOutboundTx error: nonce %d chain %s", send.Nonce, send.ReceiverChain)
 				continue
 			}
-			if tnow.Unix()%16 == int64(sendhash[0])%16 { // weakly sync the TSS signers
-				included, confirmed, _ := co.clientMap[toChain].IsSendOutTxProcessed(send.Index, int(send.Nonce))
-				if included || confirmed {
-					log.Info().Msgf("sendHash %s already confirmed; skip it", send.Index)
-					break SIGNLOOP
-				}
-				srcChainID := config.Chains[send.SenderChain].ChainID
-				if send.Status == types.SendStatus_PendingRevert {
-					log.Info().Msgf("SignRevertTx: %s => %s, nonce %d, sendHash %s", send.SenderChain, toChain, send.Nonce, send.Index)
-					toChainID := config.Chains[send.ReceiverChain].ChainID
-					tx, err = signer.SignRevertTx(ethcommon.HexToAddress(send.Sender), srcChainID, to.Bytes(), toChainID, amount, gasLimit, message, sendhash, send.Nonce, gasprice)
-				} else if send.Status == types.SendStatus_PendingOutbound {
-					log.Info().Msgf("SignOutboundTx: %s => %s, nonce %d, sendHash %s", send.SenderChain, toChain, send.Nonce, send.Index)
-					tx, err = signer.SignOutboundTx(ethcommon.HexToAddress(send.Sender), srcChainID, to, amount, gasLimit, message, sendhash, send.Nonce, gasprice)
-				}
-				if err != nil {
-					log.Warn().Err(err).Msgf("SignOutboundTx error: nonce %d chain %s", send.Nonce, send.ReceiverChain)
-					continue
-				}
-				lastSignTime = time.Now()
-				cnt, err := co.GetPromCounter(OUTBOUND_TX_SIGN_COUNT)
-				if err != nil {
-					log.Error().Err(err).Msgf("GetPromCounter error")
-				} else {
-					cnt.Inc()
-				}
-				if tx != nil {
-					outTxHash := tx.Hash().Hex()
-					log.Info().Msgf("on chain %s nonce %d, sendHash: %s, outTxHash %s signer %s", signer.chain, send.Nonce, send.Index[:6], outTxHash, myid)
-					if myid == send.Signers[send.Broadcaster] || myid == send.Signers[int(send.Broadcaster+1)%len(send.Signers)] {
-						backOff := 1000 * time.Millisecond
-						// retry loop: 1s, 2s, 4s, 8s, 16s in case of RPC error
-						for i := 0; i < 5; i++ {
-							log.Info().Msgf("broadcasting tx %s to chain %s: nonce %d, retry %d", outTxHash, toChain, send.Nonce, i)
-							// #nosec G404 randomness is not a security issue here
-							time.Sleep(time.Duration(rand.Intn(1500)) * time.Millisecond) //random delay to avoid sychronized broadcast
-							err := signer.Broadcast(tx)
-							if err != nil {
-								retry := HandlerBroadcastError(err, co.fileLogger, strconv.FormatUint(send.Nonce, 10), toChain.String(), outTxHash)
-								if !retry {
-									break
-								}
-								backOff *= 2
-								continue
-							}
-							log.Info().Msgf("Broadcast success: nonce %d chain %s outTxHash %s", send.Nonce, toChain, outTxHash)
-							co.fileLogger.Info().Msgf("Broadcast success: nonce %d chain %s outTxHash %s", send.Nonce, toChain, outTxHash)
-							zetaHash, err := co.bridge.AddTxHashToWatchlist(toChain.String(), tx.Nonce(), outTxHash)
-							if err != nil {
-								log.Err(err).Msgf("Unable to add to tracker on ZetaCore: nonce %d chain %s outTxHash %s", send.Nonce, toChain, outTxHash)
+			cnt, err := co.GetPromCounter(OUTBOUND_TX_SIGN_COUNT)
+			if err != nil {
+				log.Error().Err(err).Msgf("GetPromCounter error")
+			} else {
+				cnt.Inc()
+			}
+			if tx != nil {
+				outTxHash := tx.Hash().Hex()
+				log.Info().Msgf("on chain %s nonce %d, sendHash: %s, outTxHash %s signer %s", signer.chain, send.Nonce, send.Index[:6], outTxHash, myid)
+				if myid == send.Signers[send.Broadcaster] || myid == send.Signers[int(send.Broadcaster+1)%len(send.Signers)] {
+					backOff := 1000 * time.Millisecond
+					// retry loop: 1s, 2s, 4s, 8s, 16s in case of RPC error
+					for i := 0; i < 5; i++ {
+						log.Info().Msgf("broadcasting tx %s to chain %s: nonce %d, retry %d", outTxHash, toChain, send.Nonce, i)
+						// #nosec G404 randomness is not a security issue here
+						time.Sleep(time.Duration(rand.Intn(1500)) * time.Millisecond) //random delay to avoid sychronized broadcast
+						err := signer.Broadcast(tx)
+						if err != nil {
+							retry := HandlerBroadcastError(err, co.fileLogger, strconv.FormatUint(send.Nonce, 10), toChain.String(), outTxHash)
+							if !retry {
 								break
 							}
-							log.Info().Msgf("Broadcast to core successful %s", zetaHash)
+							backOff *= 2
+							continue
 						}
+						log.Info().Msgf("Broadcast success: nonce %d chain %s outTxHash %s", send.Nonce, toChain, outTxHash)
+						co.fileLogger.Info().Msgf("Broadcast success: nonce %d chain %s outTxHash %s", send.Nonce, toChain, outTxHash)
+						zetaHash, err := co.bridge.AddTxHashToWatchlist(toChain.String(), tx.Nonce(), outTxHash)
+						if err != nil {
+							log.Err(err).Msgf("Unable to add to tracker on ZetaCore: nonce %d chain %s outTxHash %s", send.Nonce, toChain, outTxHash)
+							break
+						}
+						log.Info().Msgf("Broadcast to core successful %s", zetaHash)
 					}
-					co.fileLogger.Info().Msgf("Keysign: %s => %s, nonce %d, outTxHash %s; keysignCount %d", send.SenderChain, toChain, send.Nonce, outTxHash, keysignCount)
-					keysignCount++
-					signInterval *= 2 // exponential backoff
 				}
+				co.fileLogger.Info().Msgf("Keysign: %s => %s, nonce %d, outTxHash %s; keysignCount %d", send.SenderChain, toChain, send.Nonce, outTxHash, keysignCount)
+				keysignCount++
 			}
 		}
+
+		// wake up at the next multiple 72s since startTimeUnit
+		wakeTime := startTimeUnix + (time.Now().Unix()-startTimeUnix+signInterval)/signInterval*signInterval
+		time.Sleep(time.Unix(wakeTime, 0).Sub(time.Now()))
 	}
 }
 
+// return whether we should retry the broadcast
 func HandlerBroadcastError(err error, logger *zerolog.Logger, nonce, toChain, outTxHash string) bool {
 	if strings.Contains(err.Error(), "nonce too low") {
 		log.Warn().Err(err).Msgf("nonce too low! this might be a unnecessary keysign. increase re-try interval and awaits outTx confirmation")

@@ -32,6 +32,8 @@ export DAEMON_HOME=$HOME/.zetacore
 export DAEMON_NAME=zetacored
 export DAEMON_ALLOW_DOWNLOAD_BINARIES=true
 export DAEMON_RESTART_AFTER_UPGRADE=true
+export CLIENT_DAEMON_NAME=zetaclientd
+export CLIENT_DAEMON_ARGS="-enable-chains,GOERLI,-val zeta"
 #export DAEMON_DATA_BACKUP_DIR=$DAEMON_HOME
 
 make clean
@@ -82,10 +84,16 @@ cp $GOPATH/bin/zetacored $GOPATH/bin/new/
 
 
 # Setup cosmovisor
+# Genesis
 cp $GOPATH/bin/old/zetacored $DAEMON_HOME/cosmovisor/genesis/bin
+cp $GOPATH/bin/zetaclientd $DAEMON_HOME/cosmovisor/genesis/bin
+
+#Upgrades
 cp $GOPATH/bin/new/zetacored $DAEMON_HOME/cosmovisor/upgrades/$UpgradeName/bin/
 
+#Permissions
 chmod +x $DAEMON_HOME/cosmovisor/genesis/bin/zetacored
+chmod +x $DAEMON_HOME/cosmovisor/genesis/bin/zetaclientd
 chmod +x $DAEMON_HOME/cosmovisor/upgrades/$UpgradeName/bin/zetacored
 
 contents="$(jq '.app_state.gov.voting_params.voting_period = "10s"' $DAEMON_HOME/config/genesis.json)" && \
@@ -103,5 +111,5 @@ clear
 sleep 7
 zetacored query gov proposal 1
 
-tail -f zetanode.log
+#tail -f zetanode.log
 

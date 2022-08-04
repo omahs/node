@@ -6,11 +6,12 @@ export DAEMON_NAME=zetacored
 export DAEMON_ALLOW_DOWNLOAD_BINARIES=true
 export DAEMON_RESTART_AFTER_UPGRADE=true
 export CLIENT_DAEMON_NAME=zetaclientd
-export CLIENT_DAEMON_ARGS="-enable-chains,GOERLI,-val zeta"
+export CLIENT_DAEMON_ARGS="-enable-chains,GOERLI,-val,zeta"
 #export DAEMON_DATA_BACKUP_DIR=$DAEMON_HOME
 
 make clean
-make install
+rm -rf ZetaClient.log
+#make install
 # Genesis
 mkdir -p $DAEMON_HOME/cosmovisor/genesis/bin
 cp $GOPATH/bin/zetacored $DAEMON_HOME/cosmovisor/genesis/bin

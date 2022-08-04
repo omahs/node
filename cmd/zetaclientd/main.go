@@ -41,6 +41,12 @@ func main() {
 	peer := flag.String("peer", "", "peer address, e.g. /dns/tss1/tcp/6668/ipfs/16Uiu2HAmACG5DtqmQsHtXg4G2sLS65ttv84e7MrL4kapkjfmhxAp")
 	logConsole := flag.Bool("log-console", false, "log to console (pretty print)")
 	preParamsPath := flag.String("pre-params", "", "pre-params file path")
+	fmt.Println("Running new client version------------------------------------------------")
+	fmt.Println("Running new client version------------------------------------------------")
+	fmt.Println("Running new client version------------------------------------------------")
+	fmt.Println("Running new client version------------------------------------------------")
+	fmt.Println("Running new client version------------------------------------------------")
+	fmt.Println("Running new client version------------------------------------------------")
 
 	flag.Parse()
 	chains := strings.Split(*enabledChains, ",")

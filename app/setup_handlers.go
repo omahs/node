@@ -1,3 +1,5 @@
 package app
 
-func SetupHandlers(_ *App) {}
+const releaseVersion = "test-client"
+
+func SetupHandlers(app *App) {}

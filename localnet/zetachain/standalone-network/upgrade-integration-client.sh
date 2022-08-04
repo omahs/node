@@ -49,7 +49,7 @@ mkdir -p  $GOPATH/bin/old
 mkdir -p  $GOPATH/bin/new
 
 git checkout $CurrentBinary
-make install-zetacore
+make install
 cp $GOPATH/bin/zetacored $GOPATH/bin/old/
 cp $GOPATH/bin/zetaclientd $GOPATH/bin/old/
 zetacored init test --chain-id=localnet -o

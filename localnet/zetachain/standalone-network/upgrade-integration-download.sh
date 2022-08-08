@@ -7,13 +7,18 @@ export DAEMON_ALLOW_DOWNLOAD_BINARIES=true
 export DAEMON_RESTART_AFTER_UPGRADE=true
 export CLIENT_DAEMON_NAME=zetaclientd
 export CLIENT_DAEMON_ARGS="-enable-chains,GOERLI,-val,zeta"
-#export DAEMON_DATA_BACKUP_DIR=$DAEMON_HOME
+export DAEMON_DATA_BACKUP_DIR=$DAEMON_HOME
 
-make clean
+rm -rf ~/.zetacore
+rm -rf zetacore.log
+rm -rf zetanode.log
+rm -rf zetacore-debug.log
+rm -rf GOERLI_debug.log
 rm -rf ZetaClient.log
 #make install
 # Genesis
 mkdir -p $DAEMON_HOME/cosmovisor/genesis/bin
+#mkdir -p $DAEMON_HOME/cosmovisor/upgrades/0.2.1/bin
 cp $GOPATH/bin/zetacored $DAEMON_HOME/cosmovisor/genesis/bin
 cp $GOPATH/bin/zetaclientd $DAEMON_HOME/cosmovisor/genesis/bin
 
@@ -29,5 +34,27 @@ zetacored add-genesis-account $(zetacored keys show mario -a --keyring-backend=t
 zetacored gentx zeta 1000000000000000000000000stake --chain-id=localnet --keyring-backend=test
 zetacored collect-gentxs
 zetacored validate-genesis
+contents="$(jq '.app_state.gov.voting_params.voting_period = "10s"' $DAEMON_HOME/config/genesis.json)" && \
+echo "${contents}" > $DAEMON_HOME/config/genesis.json
 
-cosmovisor start --home ~/.zetacore/ --p2p.laddr 0.0.0.0:27655  --grpc.address 0.0.0.0:9096 --grpc-web.address 0.0.0.0:9093 --address tcp://0.0.0.0:27659 --rpc.laddr tcp://127.0.0.1:26657
+
+cosmovisor start --home ~/.zetacore/ --p2p.laddr 0.0.0.0:27655  --grpc.address 0.0.0.0:9096 --grpc-web.address 0.0.0.0:9093 --address tcp://0.0.0.0:27659 --rpc.laddr tcp://127.0.0.1:26657 >> zetanode.log 2>&1  &
+
+sleep 7
+printf "Raising the governance proposal:\n"
+zetacored tx gov submit-proposal software-upgrade 0.2.1 \
+  --from zeta \
+  --deposit 10000000000000000000stake \
+  --upgrade-height 10 \
+  --upgrade-info '{"binaries":{"zetaclientd-darwin/arm64":"https://filebin.net/nb56m623j1w5vcey/zetaclientd","zetacored-darwin/arm64":"https://filebin.net/nb56m623j1w5vcey/zetacored"}}' \
+  --description "test-upgrade" \
+  --title "test-upgrade" \
+  --from zeta \
+  --keyring-backend test \
+  --chain-id localnet \
+  --yes
+sleep 7
+zetacored tx gov vote 1 yes --from zeta --keyring-backend test --chain-id localnet --yes
+clear
+sleep 10
+zetacored query gov proposal 1

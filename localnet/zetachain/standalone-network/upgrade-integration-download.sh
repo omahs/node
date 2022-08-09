@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-
+kill -9 $(lsof -ti:26657)
 export DAEMON_HOME=$HOME/.zetacore
 export DAEMON_NAME=zetacored
 export DAEMON_ALLOW_DOWNLOAD_BINARIES=true

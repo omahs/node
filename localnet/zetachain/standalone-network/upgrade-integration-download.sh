@@ -8,6 +8,8 @@ export DAEMON_RESTART_AFTER_UPGRADE=true
 export CLIENT_DAEMON_NAME=zetaclientd
 export CLIENT_DAEMON_ARGS="-enable-chains,GOERLI,-val,zeta"
 export DAEMON_DATA_BACKUP_DIR=$DAEMON_HOME
+export CLIENT_SKIP_UPGRADE=true
+export UNSAFE_SKIP_BACKUP=true
 
 rm -rf ~/.zetacore
 rm -rf zetacore.log
@@ -34,6 +36,8 @@ zetacored add-genesis-account $(zetacored keys show mario -a --keyring-backend=t
 zetacored gentx zeta 1000000000000000000000000stake --chain-id=localnet --keyring-backend=test
 zetacored collect-gentxs
 zetacored validate-genesis
+
+
 contents="$(jq '.app_state.gov.voting_params.voting_period = "10s"' $DAEMON_HOME/config/genesis.json)" && \
 echo "${contents}" > $DAEMON_HOME/config/genesis.json
 
@@ -45,7 +49,7 @@ printf "Raising the governance proposal:\n"
 zetacored tx gov submit-proposal software-upgrade 0.2.1 \
   --from zeta \
   --deposit 10000000000000000000stake \
-  --upgrade-height 10 \
+  --upgrade-height 6 \
   --upgrade-info '{"binaries":{"zetaclientd-darwin/arm64":"https://filebin.net/nb56m623j1w5vcey/zetaclientd","zetacored-darwin/arm64":"https://filebin.net/nb56m623j1w5vcey/zetacored"}}' \
   --description "test-upgrade" \
   --title "test-upgrade" \
@@ -58,3 +62,4 @@ zetacored tx gov vote 1 yes --from zeta --keyring-backend test --chain-id localn
 clear
 sleep 10
 zetacored query gov proposal 1
+tail -f zetanode.log

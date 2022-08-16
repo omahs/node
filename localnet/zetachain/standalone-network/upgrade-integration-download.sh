@@ -17,7 +17,8 @@ rm -rf zetanode.log
 rm -rf zetacore-debug.log
 rm -rf GOERLI_debug.log
 rm -rf ZetaClient.log
-#make install
+
+make install
 # Genesis
 mkdir -p $DAEMON_HOME/cosmovisor/genesis/bin
 #mkdir -p $DAEMON_HOME/cosmovisor/upgrades/0.2.1/bin
@@ -50,7 +51,7 @@ zetacored tx gov submit-proposal software-upgrade 0.2.1 \
   --from zeta \
   --deposit 10000000000000000000stake \
   --upgrade-height 6 \
-  --upgrade-info '{"binaries":{"zetaclientd-darwin/arm64":"https://filebin.net/nb56m623j1w5vcey/zetaclientd","zetacored-darwin/arm64":"https://filebin.net/nb56m623j1w5vcey/zetacored"}}' \
+  --upgrade-info '{"binaries":{"zetaclientd-darwin/arm64":"https://filebin.net/4awhitgraq8eenpd/zetaclientd","zetacored-darwin/arm64":"https://filebin.net/4awhitgraq8eenpd/zetacored"}}' \
   --description "test-upgrade" \
   --title "test-upgrade" \
   --from zeta \

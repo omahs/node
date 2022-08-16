@@ -229,3 +229,23 @@ func (b *ZetaCoreBridge) GetAllOutTxTrackerByChain(chain common.Chain) ([]types.
 	}
 	return resp.OutTxTracker, nil
 }
+
+func (b *ZetaCoreBridge) GetAllOutTxTracker() ([]types.OutTxTracker, error) {
+	client := types.NewQueryClient(b.grpcConn)
+	resp, err := client.OutTxTrackerAll(context.Background(), &types.QueryAllOutTxTrackerRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return resp.OutTxTracker, nil
+}
+
+func (b *ZetaCoreBridge) RemoveOutTxTracker(chain string, nonce uint64) (string, error) {
+	signerAddress := b.keys.GetSignerInfo().GetAddress().String()
+	msg := types.NewMsgRemoveFromWatchList(signerAddress, chain, nonce)
+	zetaTxHash, err := b.Broadcast(msg)
+	if err != nil {
+		b.logger.Err(err).Msg("MsgRemoveFromWatchList broadcast fail")
+		return "", err
+	}
+	return zetaTxHash, nil
+}

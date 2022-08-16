@@ -415,3 +415,54 @@ func HandleBroadcastError(err error, nonce, toChain, outTxHash string) (bool, bo
 	log.Error().Err(err).Msgf("Broadcast error: nonce %s chain %s outTxHash %s; retring...", nonce, toChain, outTxHash)
 	return true, false
 }
+
+// Remove entries from OutTxTracker entries that does not correspond to pending send
+func (co *CoreObserver) startWatchListMaintenance() {
+	ticker := time.NewTicker(10 * time.Minute)
+	for {
+		select {
+		case <-ticker.C:
+			outTxTracker, err := co.bridge.GetAllOutTxTracker()
+			if err != nil {
+				co.logger.Error().Err(err).Msg("Unable to get OutTxTracker")
+				break
+			}
+			sendList, err := co.bridge.GetAllPendingSend()
+			if err != nil {
+				co.logger.Error().Err(err).Msg("Unable to get pending send")
+				break
+			}
+			outTxMap := make(map[string][]*types.OutTxTracker)
+			for _, outTx := range outTxTracker {
+				sendID := fmt.Sprintf("%s/%s", outTx.Chain, outTx.Nonce)
+				outTxMap[sendID] = append(outTxMap[sendID], &outTx)
+			}
+			pendingSendMap := make(map[string]*types.Send)
+			for _, send := range sendList {
+				sendID := fmt.Sprintf("%s/%s", getTargetChain(send), send.Nonce)
+				pendingSendMap[sendID] = send
+			}
+			for sendID, _ := range outTxMap {
+				if _, found := pendingSendMap[sendID]; !found {
+					co.logger.Info().Msgf("Removing OutTxTracker entry for %s", sendID)
+					parts := strings.Split(sendID, "/")
+					if len(parts) != 2 {
+						co.logger.Error().Msgf("Invalid sendID %s", sendID)
+						continue
+					}
+					nonce, err := strconv.Atoi(parts[1])
+					if err != nil {
+						co.logger.Error().Err(err).Msgf("Invalid sendID %s", sendID)
+						continue
+					}
+					txHash, err := co.bridge.RemoveOutTxTracker(parts[0], uint64(nonce))
+					if err != nil {
+						co.logger.Error().Err(err).Msgf("Unable to remove OutTxTracker entry for %s", sendID)
+					}
+					co.logger.Info().Msgf("Removed OutTxTracker entry for %s: zeta tx hash %s", sendID, txHash)
+				}
+			}
+		}
+	}
+
+}

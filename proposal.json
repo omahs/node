@@ -1,0 +1,17 @@
+{
+  "title": "gov-params",
+  "description": "Governance Params Update.",
+  "changes": [
+    {
+      "subspace": "gov",
+      "key": "votingparams",
+      "value": {"voting_period": "600000000000"}
+    },
+    {
+      "subspace": "gov",
+      "key": "depositparams",
+      "value": {"max_deposit_period": "600000000000"}
+    }
+  ],
+  "deposit": "100000000stake"
+}

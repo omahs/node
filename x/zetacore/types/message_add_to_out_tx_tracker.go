@@ -46,3 +46,34 @@ func (msg *MsgAddToOutTxTracker) ValidateBasic() error {
 	}
 	return nil
 }
+
+var _ sdk.Msg = &MsgAddToWatchList{}
+
+func (msg *MsgAddToWatchList) Route() string {
+	return RouterKey
+}
+
+func (msg *MsgAddToWatchList) Type() string {
+	return "add_to_watch_list"
+}
+
+func (msg *MsgAddToWatchList) GetSigners() []sdk.AccAddress {
+	creator, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		panic(err)
+	}
+	return []sdk.AccAddress{creator}
+}
+
+func (msg *MsgAddToWatchList) GetSignBytes() []byte {
+	bz := ModuleCdc.MustMarshalJSON(msg)
+	return sdk.MustSortJSON(bz)
+}
+
+func (msg *MsgAddToWatchList) ValidateBasic() error {
+	_, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+	}
+	return nil
+}

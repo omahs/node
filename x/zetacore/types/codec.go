@@ -29,6 +29,10 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgAddToOutTxTracker{},
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgAddToWatchList{},
+	)
+
+	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgRemoveFromOutTxTracker{},
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),

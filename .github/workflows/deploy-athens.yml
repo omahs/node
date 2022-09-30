@@ -52,7 +52,6 @@ jobs:
         echo "GITHUB_REF_NAME=$GITHUB_REF_NAME" >> $GITHUB_ENV
 
     - name: Set Up Go 
-      if : ${{ inputs.go-version != '' }} 
       uses: actions/setup-go@v3
       env:
         GOPRIVATE: "github.com/zeta-chain/*"
@@ -68,11 +67,6 @@ jobs:
         echo "Building zetacored and zetaclients"
         make install
         cp "$HOME"/go/bin/* ./
-
-      with:
-        run-tests: ${{ env.ENVIRONMENT_NAME != 'STAGING' }}
-        build-indexer: false
-        go-version: '1.18'
 
 
     # - name: Build

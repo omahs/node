@@ -51,12 +51,37 @@ jobs:
         echo "Environment Name:$ENVIRONMENT_NAME"
         echo "GITHUB_REF_NAME=$GITHUB_REF_NAME" >> $GITHUB_ENV
 
-    - name: Build
-      uses: ./.github/actions/build-binaries
+    - name: Set Up Go 
+      if : ${{ inputs.go-version != '' }} 
+      uses: actions/setup-go@v3
+      env:
+        GOPRIVATE: "github.com/zeta-chain/*"
+      with:
+        go-version: '1.18'
+
+    - name: Build Binaries
+      env:
+        GOPRIVATE: "github.com/zeta-chain/*"
+      shell: bash
+      run: |
+        #!/bin/bash
+        echo "Building zetacored and zetaclients"
+        make install
+        cp "$HOME"/go/bin/* ./
+
       with:
         run-tests: ${{ env.ENVIRONMENT_NAME != 'STAGING' }}
-        build-indexer: true
+        build-indexer: false
         go-version: '1.18'
+
+
+    # - name: Build
+    #   uses: ./.github/actions/build-binaries
+    #   with:
+    #     run-tests: ${{ env.ENVIRONMENT_NAME != 'STAGING' }}
+    #     build-indexer: true
+    #     go-version: '1.18'
+    #     GITHUB_PAT: ${{ secrets.PAT_GITHUB_SERVICE_ACCT }}
 
     - name: Install AWS CLI
       run: |

@@ -16,6 +16,10 @@ inputs:
     required: true
     default: "STAGING"
 
+  GITHUB_PAT:  
+    description: 'Environment Name'
+    required: true
+
 runs:
   using: "composite"
   steps:
@@ -35,7 +39,7 @@ runs:
     - name: setup-git-credentials
       uses: de-vri-es/setup-git-credentials@v2
       with:
-        credentials: ${{ secrets.PAT_GITHUB_SERVICE_ACCT }} 
+        credentials: ${{ inputs.GITHUB_PAT }}  
 
     - name: build zetacored and zetaclientd
       run: ${GITHUB_ACTION_PATH}/build.sh

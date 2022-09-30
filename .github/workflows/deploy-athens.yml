@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - athens-v*
+    branches:
+      - athens-v1-develop*
 env:
   ENVIRONMENT_NAME: "ATHENS"
   S3_BUCKET_NAME: "zetachain-deployment-files-athens"

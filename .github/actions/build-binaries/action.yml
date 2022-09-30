@@ -32,6 +32,11 @@ runs:
         echo Running ZetaChain Build Action
       shell: bash
 
+    - name: setup-git-credentials
+      uses: de-vri-es/setup-git-credentials@v2
+      with:
+        credentials: ${{ secrets.PAT_GITHUB_SERVICE_ACCT }} 
+
     - name: build zetacored and zetaclientd
       run: ${GITHUB_ACTION_PATH}/build.sh
       env:

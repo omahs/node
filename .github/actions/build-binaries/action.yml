@@ -26,13 +26,16 @@ runs:
       uses: actions/setup-go@v3
       with:
         go-version: ${{ inputs.go-version }}  
-
+      env:
+        GOPRIVATE: "github.com/zeta-chain/*"
     - run: |
         echo Running ZetaChain Build Action
       shell: bash
 
     - name: build zetacored and zetaclientd
       run: ${GITHUB_ACTION_PATH}/build.sh
+      env:
+        GOPRIVATE: "github.com/zeta-chain/*"
       shell: bash
 
     - name: Build Indexer
@@ -41,6 +44,8 @@ runs:
       shell: bash
 
     - name: Cosmovisor
+      env:
+        GOPRIVATE: "github.com/zeta-chain/*"
       run: |
         go install github.com/cosmos/cosmos-sdk/cosmovisor/cmd/cosmovisor@v0.1.0
         cp "$HOME"/go/bin/cosmovisor ./cosmovisor

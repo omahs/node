@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-
 	ecdsakeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/rs/zerolog"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
@@ -15,9 +14,9 @@ import (
 	"github.com/zeta-chain/zetacore/zetaclient/config"
 	metrics2 "github.com/zeta-chain/zetacore/zetaclient/metrics"
 	clienttypes "github.com/zeta-chain/zetacore/zetaclient/types"
+	mctypes "github.com/zeta-chain/zetacore/zetaclient/types"
 	tsscommon "gitlab.com/thorchain/tss/go-tss/common"
 	"gitlab.com/thorchain/tss/go-tss/keygen"
-
 	"io/ioutil"
 	"strings"
 	"syscall"
@@ -39,8 +38,10 @@ import (
 )
 
 var (
-	preParams   *ecdsakeygen.LocalPreParams
-	keygenBlock int64
+	preParams              *ecdsakeygen.LocalPreParams
+	keygenBlock            int64
+	deployConnectorAndZeta *bool
+	dummyTssSigner         *bool
 )
 
 func main() {
@@ -53,6 +54,8 @@ func main() {
 	zetaCoreHome := flag.String("core-home", ".zetacored", "folder name for core")
 	keygen := flag.Int64("keygen-block", 0, "keygen at block height (default: 0 means no keygen)")
 	chainID := flag.String("chain-id", "athens-1", "chain id")
+	deployConnectorAndZeta = flag.Bool("deploy-connector-and-zeta", false, "deploy connector and zeta contract from TSS address")
+	dummyTssSigner = flag.Bool("dummy-tss-signer", false, "dummy tss signer for testing; need PRIVKEY envvar")
 
 	flag.Parse()
 	cmd.CHAINID = *chainID
@@ -177,29 +180,49 @@ func start(validatorName string, peers addr.AddrList, zetacoreHome string) {
 	var priKey secp256k1.PrivKey
 	priKey = bridgePk.Bytes()[:32]
 
-	log.Info().Msgf("NewTSS: with peer pubkey %s", bridgePk.PubKey())
-	tss, err := mc.NewTSS(peers, priKey, preParams)
-	if err != nil {
-		log.Error().Err(err).Msg("NewTSS error")
-		return
-	}
+	var tssI mctypes.TSSSignerI
+	if *dummyTssSigner {
+		log.Info().Msg("using dummy tss private key")
+		envvar := os.Getenv("PRIVKEY")
+		if envvar == "" {
+			log.Error().Err(err).Msg("Envvar PRIVKEY not found")
+			return
+		}
+		tssI, err = mc.NewTestSigner(envvar)
+		if err != nil {
+			log.Error().Err(err).Msgf("NewTestSigner error: %s", envvar)
+			return
+		}
+	} else {
+		log.Info().Msgf("NewTSS: with peer pubkey %s", bridgePk.PubKey())
+		tssI, err = mc.NewTSS(peers, priKey, preParams)
+		if err != nil {
+			log.Error().Err(err).Msg("NewTSS error")
+			return
+		}
 
-	consKey := ""
-	pubkeySet, err := bridge1.GetKeys().GetPubKeySet()
-	if err != nil {
-		log.Error().Err(err).Msgf("Get Pubkey Set Error")
+		consKey := ""
+		pubkeySet, err := bridge1.GetKeys().GetPubKeySet()
+		if err != nil {
+			log.Error().Err(err).Msgf("Get Pubkey Set Error")
+		}
+		ztx, err := bridge1.SetNodeKey(pubkeySet, consKey)
+		if err != nil {
+			log.Error().Err(err).Msgf("SetNodeKey error : %s", err.Error())
+			return
+		}
+		log.Info().Msgf("SetNodeKey: %s by node %s zeta tx %s", pubkeySet.Secp256k1.String(), consKey, ztx)
+		log.Info().Msg("wait for 20s for all node to SetNodeKey")
+		time.Sleep(12 * time.Second)
 	}
-	ztx, err := bridge1.SetNodeKey(pubkeySet, consKey)
-	if err != nil {
-		log.Error().Err(err).Msgf("SetNodeKey error : %s", err.Error())
-		return
-	}
-	log.Info().Msgf("SetNodeKey: %s by node %s zeta tx %s", pubkeySet.Secp256k1.String(), consKey, ztx)
-	log.Info().Msg("wait for 20s for all node to SetNodeKey")
-	time.Sleep(12 * time.Second)
 
 	if keygenBlock > 0 {
 		log.Info().Msgf("Keygen at blocknum %d", keygenBlock)
+		tss, ok := tssI.(*mc.TSS)
+		if !ok {
+			log.Error().Msg("tssI is not TSS")
+			return
+		}
 		bn, err := bridge1.GetZetaBlockHeight()
 		if err != nil {
 			log.Error().Err(err).Msg("GetZetaBlockHeight error")
@@ -242,9 +265,9 @@ func start(validatorName string, peers addr.AddrList, zetacoreHome string) {
 		log.Info().Msgf("Keygen success! keygen response: %v...", res)
 
 		log.Info().Msgf("doing a keysign test...")
-		err = mc.TestKeysign(res.PubKey, tss.Server)
-		if err != nil {
-			log.Error().Err(err).Msg("TestKeysign error")
+		ok = tss.TestKeysign()
+		if !ok {
+			log.Error().Msg("TestKeysign error")
 			return
 		}
 
@@ -256,27 +279,25 @@ func start(validatorName string, peers addr.AddrList, zetacoreHome string) {
 			return
 		}
 		log.Info().Msgf("TSS address in hex: %s", tss.Address().Hex())
+		log.Info().Msgf("please fund the TSS address with gas assets")
 		return
 	}
 
-	//kg, err := bridge1.GetKeyGen()
-	//if err != nil {
-	//	log.Error().Err(err).Msg("GetKeyGen error")
-	//	return
-	//}
-	//log.Info().Msgf("Setting TSS pubkeys: %s", kg.Pubkeys)
-	//tss.Pubkeys = kg.Pubkeys
-
-	for _, chain := range config.ChainsEnabled {
-		zetaTx, err := bridge1.SetTSS(chain, tss.Address().Hex(), tss.CurrentPubkey)
-		if err != nil {
-			log.Error().Err(err).Msgf("SetTSS fail %s", chain)
-		}
-		log.Info().Msgf("chain %s set TSS to %s, zeta tx hash %s", chain, tss.Address().Hex(), zetaTx)
+	if *deployConnectorAndZeta {
+		log.Info().Msg("deploying connector and zeta...")
 
 	}
 
-	signerMap1, err := CreateSignerMap(tss)
+	for _, chain := range config.ChainsEnabled {
+		zetaTx, err := bridge1.SetTSS(chain, tssI.Address().Hex(), tssI.PubkeyString())
+		if err != nil {
+			log.Error().Err(err).Msgf("SetTSS fail %s", chain)
+		}
+		log.Info().Msgf("chain %s set TSS to %s, zeta tx hash %s", chain, tssI.Address().Hex(), zetaTx)
+
+	}
+
+	signerMap1, err := CreateSignerMap(tssI)
 	if err != nil {
 		log.Error().Err(err).Msg("CreateSignerMap")
 		return
@@ -291,7 +312,7 @@ func start(validatorName string, peers addr.AddrList, zetacoreHome string) {
 
 	userDir, _ := os.UserHomeDir()
 	dbpath := filepath.Join(userDir, ".zetaclient/chainobserver")
-	chainClientMap1, err := CreateChainClientMap(bridge1, tss, dbpath, metrics)
+	chainClientMap1, err := CreateChainClientMap(bridge1, tssI, dbpath, metrics)
 	if err != nil {
 		log.Err(err).Msg("CreateSignerMap")
 		return
@@ -301,7 +322,7 @@ func start(validatorName string, peers addr.AddrList, zetacoreHome string) {
 	}
 
 	log.Info().Msg("starting zetacore observer...")
-	mo1 := mc.NewCoreObserver(bridge1, signerMap1, *chainClientMap1, metrics, tss)
+	mo1 := mc.NewCoreObserver(bridge1, signerMap1, *chainClientMap1, metrics, tssI)
 
 	mo1.MonitorCore()
 

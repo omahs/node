@@ -7,6 +7,7 @@ import (
 	mc "github.com/zeta-chain/zetacore/zetaclient"
 	mcconfig "github.com/zeta-chain/zetacore/zetaclient/config"
 	"github.com/zeta-chain/zetacore/zetaclient/metrics"
+	mctypes "github.com/zeta-chain/zetacore/zetaclient/types"
 	"os"
 )
 
@@ -32,7 +33,7 @@ func CreateZetaBridge(chainHomeFoler string, signerName string, signerPass strin
 	return bridge, false
 }
 
-func CreateSignerMap(tss mc.TSSSigner) (map[common.Chain]*mc.Signer, error) {
+func CreateSignerMap(tss mctypes.TSSSignerI) (map[common.Chain]*mc.Signer, error) {
 	signerMap := make(map[common.Chain]*mc.Signer)
 
 	for _, chain := range mcconfig.ChainsEnabled {
@@ -48,7 +49,7 @@ func CreateSignerMap(tss mc.TSSSigner) (map[common.Chain]*mc.Signer, error) {
 	return signerMap, nil
 }
 
-func CreateChainClientMap(bridge *mc.ZetaCoreBridge, tss mc.TSSSigner, dbpath string, metrics *metrics.Metrics) (*map[common.Chain]*mc.ChainObserver, error) {
+func CreateChainClientMap(bridge *mc.ZetaCoreBridge, tss mctypes.TSSSignerI, dbpath string, metrics *metrics.Metrics) (*map[common.Chain]*mc.ChainObserver, error) {
 	clientMap := make(map[common.Chain]*mc.ChainObserver)
 
 	for _, chain := range mcconfig.ChainsEnabled {

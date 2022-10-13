@@ -6,6 +6,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
+	tsscommon "gitlab.com/thorchain/tss/go-tss/common"
+	gokeygen "gitlab.com/thorchain/tss/go-tss/keygen"
+
+	//"github.com/binance-chain/tss-lib/ecdsa/keygen"
+
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog"
 	zcommon "github.com/zeta-chain/zetacore/common/cosmos"
@@ -75,6 +80,10 @@ func (tss *TSS) Pubkey() []byte {
 	return tss.Keys[tss.CurrentPubkey].PubkeyInBytes
 }
 
+func (tss *TSS) PubkeyString() string {
+	return tss.CurrentPubkey
+}
+
 // digest should be Keccak256 Hash of some data
 func (tss *TSS) Sign(digest []byte) ([65]byte, error) {
 	H := digest
@@ -136,6 +145,34 @@ func (tss *TSS) InsertPubKey(pk string) error {
 	}
 	tss.Keys[pk] = TSSKey
 	return nil
+}
+
+func (tss *TSS) Keygen(pubkeys []string) error {
+	var req gokeygen.Request
+	req = gokeygen.NewRequest(pubkeys, int64(1337), "0.14.0")
+	res, err := tss.Server.Keygen(req)
+	if err != nil || res.Status != tsscommon.Success {
+		return fmt.Errorf("keygen fail: reason %s blame nodes %s", res.Blame.FailReason, res.Blame.BlameNodes)
+
+	}
+	// Keygen succeed! Report TSS address
+	err = tss.InsertPubKey(res.PubKey)
+	if err != nil {
+		fmt.Errorf("InsertPubKey fail")
+
+	}
+	tss.CurrentPubkey = res.PubKey
+	return nil
+}
+
+func (tss *TSS) TestKeysign() bool {
+	log.Info().Msg("trying keysign...")
+	data := []byte("hello meta")
+	H := crypto.Keccak256Hash(data)
+	log.Info().Msgf("hash of data (hello meta) is %s", H)
+
+	_, err := tss.Sign(H.Bytes())
+	return err == nil
 }
 
 func getKeyAddr(tssPubkey string) (ethcommon.Address, error) {
@@ -280,33 +317,6 @@ func SetupTSSServer(peer addr.AddrList, privkey tmcrypto.PrivKey, preParams *key
 	log.Info().Msgf("LocalID: %v", tssServer.GetLocalPeerID())
 	s.p2pid = tssServer.GetLocalPeerID()
 	return tssServer, s, nil
-}
-
-func TestKeysign(tssPubkey string, tssServer *tss.TssServer) error {
-	log.Info().Msg("trying keysign...")
-	data := []byte("hello meta")
-	H := crypto.Keccak256Hash(data)
-	log.Info().Msgf("hash of data (hello meta) is %s", H)
-
-	keysignReq := keysign.NewRequest(tssPubkey, []string{base64.StdEncoding.EncodeToString(H.Bytes())}, 10, nil, "0.14.0")
-	ksRes, err := tssServer.KeySign(keysignReq)
-	if err != nil {
-		log.Warn().Msg("keysign fail")
-	}
-	signature := ksRes.Signatures
-	// [{cyP8i/UuCVfQKDsLr1kpg09/CeIHje1FU6GhfmyMD5Q= D4jXTH3/CSgCg+9kLjhhfnNo3ggy9DTQSlloe3bbKAs= eY++Z2LwsuKG1JcghChrsEJ4u9grLloaaFZNtXI3Ujk= AA==}]
-	// 32B msg hash, 32B R, 32B S, 1B RC
-	log.Info().Msgf("signature of helloworld... %v", signature)
-
-	if len(signature) == 0 {
-		log.Info().Msgf("signature has length 0, skipping verify")
-		return fmt.Errorf("signature has length 0")
-	}
-	verifySignature(tssPubkey, signature, H.Bytes())
-	if verifySignature(tssPubkey, signature, H.Bytes()) {
-		return nil
-	}
-	return fmt.Errorf("verify signature fail")
 }
 
 func verifySignature(tssPubkey string, signature []keysign.Signature, H []byte) bool {

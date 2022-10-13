@@ -52,7 +52,7 @@ func (b *ZetaCoreBridge) Broadcast(msgs ...stypes.Msg) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	builder.SetGasLimit(400000000)
+	builder.SetGasLimit(50_000_000)
 	fee := stypes.NewCoins(stypes.NewCoin("azeta", stypes.NewInt(40000)))
 	builder.SetFeeAmount(fee)
 	//fmt.Printf("signing from name: %s\n", ctx.GetFromName())
@@ -67,7 +67,9 @@ func (b *ZetaCoreBridge) Broadcast(msgs ...stypes.Msg) (string, error) {
 	}
 
 	// broadcast to a Tendermint node
-	commit, err := ctx.BroadcastTxSync(txBytes)
+	//commit, err := ctx.BroadcastTxSync(txBytes)
+	commit, err := ctx.BroadcastTxCommit(txBytes)
+
 	if err != nil {
 		b.logger.Error().Err(err).Msgf("fail to broadcast tx")
 		return "", err

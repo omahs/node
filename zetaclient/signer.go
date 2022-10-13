@@ -2,7 +2,6 @@ package zetaclient
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethcommon "github.com/ethereum/go-ethereum/common"
@@ -12,29 +11,24 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/zeta-chain/zetacore/common"
+	"github.com/zeta-chain/zetacore/zetaclient/types"
 	"math/big"
 	"strings"
 	"time"
 )
 
-type TSSSigner interface {
-	Pubkey() []byte
-	Sign(data []byte) ([65]byte, error)
-	Address() ethcommon.Address
-}
-
 type Signer struct {
 	client              *ethclient.Client
 	chain               common.Chain
 	chainID             *big.Int
-	tssSigner           TSSSigner
+	tssSigner           types.TSSSignerI
 	ethSigner           ethtypes.Signer
 	abi                 abi.ABI
 	metaContractAddress ethcommon.Address
 	logger              zerolog.Logger
 }
 
-func NewSigner(chain common.Chain, endpoint string, tssSigner TSSSigner, abiString string, metaContract ethcommon.Address) (*Signer, error) {
+func NewSigner(chain common.Chain, endpoint string, tssSigner types.TSSSignerI, abiString string, metaContract ethcommon.Address) (*Signer, error) {
 	client, err := ethclient.Dial(endpoint)
 	if err != nil {
 		return nil, err
@@ -143,29 +137,6 @@ func (signer *Signer) SignRevertTx(sender ethcommon.Address, srcChainID *big.Int
 	}
 
 	return tx, nil
-}
-
-type TestSigner struct {
-	PrivKey *ecdsa.PrivateKey
-}
-
-func (s TestSigner) Sign(digest []byte) ([65]byte, error) {
-	sig, err := crypto.Sign(digest, s.PrivKey)
-	if err != nil {
-		return [65]byte{}, err
-	}
-	var sigbyte [65]byte
-	copy(sigbyte[:], sig[:65])
-	return sigbyte, nil
-}
-
-func (s TestSigner) Pubkey() []byte {
-	publicKeyBytes := crypto.FromECDSAPub(&s.PrivKey.PublicKey)
-	return publicKeyBytes
-}
-
-func (s TestSigner) Address() ethcommon.Address {
-	return crypto.PubkeyToAddress(s.PrivKey.PublicKey)
 }
 
 func (signer *Signer) SignCancelTx(nonce uint64, gasPrice *big.Int) (*ethtypes.Transaction, error) {

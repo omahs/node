@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/pkg/errors"
+	mctypes "github.com/zeta-chain/zetacore/zetaclient/types"
 	"math/big"
 	"math/rand"
 	"os"
@@ -18,8 +19,6 @@ import (
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/rs/zerolog"
-	"gitlab.com/thorchain/tss/go-tss/keygen"
-
 	"github.com/rs/zerolog/log"
 	"github.com/zeta-chain/zetacore/common"
 	"github.com/zeta-chain/zetacore/zetaclient/config"
@@ -28,8 +27,6 @@ import (
 	prom "github.com/prometheus/client_golang/prometheus"
 
 	"github.com/zeta-chain/zetacore/x/zetacore/types"
-
-	tsscommon "gitlab.com/thorchain/tss/go-tss/common"
 )
 
 const (
@@ -41,11 +38,11 @@ type CoreObserver struct {
 	signerMap map[common.Chain]*Signer
 	clientMap map[common.Chain]*ChainObserver
 	metrics   *metrics.Metrics
-	tss       *TSS
+	tss       mctypes.TSSSignerI
 	logger    zerolog.Logger
 }
 
-func NewCoreObserver(bridge *ZetaCoreBridge, signerMap map[common.Chain]*Signer, clientMap map[common.Chain]*ChainObserver, metrics *metrics.Metrics, tss *TSS) *CoreObserver {
+func NewCoreObserver(bridge *ZetaCoreBridge, signerMap map[common.Chain]*Signer, clientMap map[common.Chain]*ChainObserver, metrics *metrics.Metrics, tss mctypes.TSSSignerI) *CoreObserver {
 	co := CoreObserver{}
 	co.logger = log.With().Str("module", "CoreObserver").Logger()
 	co.tss = tss
@@ -98,24 +95,15 @@ func (co *CoreObserver) keygenObserve() {
 		go func() {
 			for {
 				log.Info().Msgf("Detected KeyGen, initiate keygen at blocknumm %d, # signers %d", kg.BlockNumber, len(kg.Pubkeys))
-				var req keygen.Request
-				req = keygen.NewRequest(kg.Pubkeys, int64(kg.BlockNumber), "0.14.0")
-				res, err := co.tss.Server.Keygen(req)
-				if err != nil || res.Status != tsscommon.Success {
-					co.logger.Error().Msgf("keygen fail: reason %s blame nodes %s", res.Blame.FailReason, res.Blame.BlameNodes)
-					continue
-				}
-				// Keygen succeed! Report TSS address
-				co.logger.Info().Msgf("Keygen success! keygen response: %v...", res)
-				err = co.tss.InsertPubKey(res.PubKey)
+				err := co.tss.Keygen(kg.Pubkeys)
 				if err != nil {
-					co.logger.Error().Msgf("InsertPubKey fail")
+					log.Error().Err(err).Msgf("Keygen failed")
+					time.Sleep(1 * time.Second)
 					continue
 				}
-				co.tss.CurrentPubkey = res.PubKey
 
 				for _, chain := range config.ChainsEnabled {
-					_, err = co.bridge.SetTSS(chain, co.tss.Address().Hex(), co.tss.CurrentPubkey)
+					_, err = co.bridge.SetTSS(chain, co.tss.Address().Hex(), co.tss.PubkeyString())
 					if err != nil {
 						co.logger.Error().Err(err).Msgf("SetTSS fail %s", chain)
 					}
@@ -123,9 +111,13 @@ func (co *CoreObserver) keygenObserve() {
 
 				// Keysign test: sanity test
 				co.logger.Info().Msgf("test keysign...")
-				_ = TestKeysign(co.tss.CurrentPubkey, co.tss.Server)
-				co.logger.Info().Msg("test keysign finished. exit keygen loop. ")
-
+				ok := co.tss.TestKeysign()
+				if !ok {
+					co.logger.Error().Msgf("test keysign failed")
+					continue
+				} else {
+					co.logger.Info().Msg("test keysign finished. exit keygen loop. ")
+				}
 				for _, chain := range config.ChainsEnabled {
 					err = co.clientMap[chain].PostNonceIfNotRecorded()
 					if err != nil {

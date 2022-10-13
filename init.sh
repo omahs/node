@@ -3,7 +3,7 @@
 set -x
 
 KEY1="alice"
-KEY2="bob"
+KEY2="val"
 CHAINID="athens_8888-2"
 MONIKER="localtestnet"
 KEYRING="test"
@@ -27,10 +27,10 @@ zetacored config chain-id $CHAINID --home ~/.zetacored
 # if $KEY exists it should be deleted
 #zetacored keys add $KEY1 --keyring-backend $KEYRING --algo $KEYALGO
 echo "Generating deterministic account - alice"
-echo "race draft rival universe maid cheese steel logic crowd fork comic easy truth drift tomorrow eye buddy head time cash swing swift midnight borrow" | zetacored keys add alice --recover --keyring-backend $KEYRING --algo=secp256k1 --home ~/.zetacored
+echo "race draft rival universe maid cheese steel logic crowd fork comic easy truth drift tomorrow eye buddy head time cash swing swift midnight borrow" | zetacored keys add $KEY1 --recover --keyring-backend $KEYRING  --home ~/.zetacored
 
-echo "Generating deterministic account - bob"
-echo "hand inmate canvas head lunar naive increase recycle dog ecology inhale december wide bubble hockey dice worth gravity ketchup feed balance parent secret orchard" | zetacored keys add bob --recover --algo=secp256k1 --keyring-backend $KEYRING --home ~/.zetacored
+echo "Generating deterministic account - val"
+echo "hand inmate canvas head lunar naive increase recycle dog ecology inhale december wide bubble hockey dice worth gravity ketchup feed balance parent secret orchard" | zetacored keys add $KEY2 --recover --algo=secp256k1 --keyring-backend $KEYRING --home ~/.zetacored
 
 
 # Set moniker and chain-id for Ethermint (Moniker can be anything, chain-id must be an integer)
@@ -45,7 +45,7 @@ cat $HOME/.zetacored/config/genesis.json | jq '.app_state["evm"]["params"]["evm_
 
 
 # Set gas limit in genesis
-cat $HOME/.zetacored/config/genesis.json | jq '.consensus_params["block"]["max_gas"]="10000000"' > $HOME/.zetacored/config/tmp_genesis.json && mv $HOME/.zetacored/config/tmp_genesis.json $HOME/.zetacored/config/genesis.json
+cat $HOME/.zetacored/config/genesis.json | jq '.consensus_params["block"]["max_gas"]="100000000"' > $HOME/.zetacored/config/tmp_genesis.json && mv $HOME/.zetacored/config/tmp_genesis.json $HOME/.zetacored/config/genesis.json
 
 # disable produce empty block
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -84,11 +84,11 @@ fi
 
 # Allocate genesis accounts (cosmos formatted addresses)
 zetacored add-genesis-account $KEY1 100000000000000000000000000azeta --keyring-backend $KEYRING --home ~/.zetacored
-zetacored add-genesis-account $KEY2 1000000000000000000000azeta --keyring-backend $KEYRING --home ~/.zetacored
+zetacored add-genesis-account $KEY2 100000000000000000000000000azeta --keyring-backend $KEYRING --home ~/.zetacored
 
 
 # Sign genesis transaction
-zetacored gentx $KEY1 1000000000000000000000azeta --keyring-backend $KEYRING --chain-id $CHAINID --home ~/.zetacored
+zetacored gentx $KEY2 1000000000000000000000azeta --keyring-backend $KEYRING --chain-id $CHAINID --home ~/.zetacored
 
 # Collect genesis tx
 zetacored collect-gentxs --home ~/.zetacored

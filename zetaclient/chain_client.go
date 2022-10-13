@@ -3,6 +3,7 @@ package zetaclient
 import (
 	"context"
 	"fmt"
+	"github.com/zeta-chain/zetacore/zetaclient/types"
 	"os"
 	"strconv"
 	"strings"
@@ -52,7 +53,7 @@ type ChainObserver struct {
 	ConnectorAddress       ethcommon.Address
 	EvmClient              *ethclient.Client
 	zetaClient             *ZetaCoreBridge
-	Tss                    TSSSigner
+	Tss                    types.TSSSignerI
 	lastBlock              uint64
 	confCount              uint64 // must wait this many blocks to be considered "confirmed"
 	BlockTime              uint64 // block time in seconds
@@ -72,7 +73,7 @@ type ChainObserver struct {
 }
 
 // Return configuration based on supplied target chain
-func NewChainObserver(chain common.Chain, bridge *ZetaCoreBridge, tss TSSSigner, dbpath string, metrics *metricsPkg.Metrics) (*ChainObserver, error) {
+func NewChainObserver(chain common.Chain, bridge *ZetaCoreBridge, tss types.TSSSignerI, dbpath string, metrics *metricsPkg.Metrics) (*ChainObserver, error) {
 	ob := ChainObserver{}
 	ob.stop = make(chan struct{})
 	ob.chain = chain

@@ -256,12 +256,13 @@ func (co *CoreObserver) startSendScheduler() {
 					logger.Info().Msgf("outstanding %d CCTX's on chain %s: range [%d,%d]", len(sendList), chain, sendList[0].OutBoundTxParams.OutBoundTxTSSNonce, sendList[len(sendList)-1].OutBoundTxParams.OutBoundTxTSSNonce)
 				}
 				for idx, send := range sendList {
-					logger.Info().Msgf("Processing CCTX: %d", len(send.Index))
+					logger.Info().Msgf("Processing CCTX: %d", send.Index)
 					ob, err := co.getTargetChainOb(send)
 					if err != nil {
 						logger.Error().Err(err).Msgf("getTargetChainOb fail %s", chain)
 						continue
 					}
+					logger.Info().Msgf("Processing CCTX target chain : %d", chain)
 					// update metrics
 					if idx == 0 {
 						pTxs, err := ob.GetPromGauge(metrics.PendingTxs)
@@ -271,6 +272,7 @@ func (co *CoreObserver) startSendScheduler() {
 						}
 						pTxs.Set(float64(len(sendList)))
 					}
+					logger.Info().Msgf("Updated Metrics : %s", send.Index)
 					included, confirmed, err := ob.IsSendOutTxProcessed(send.Index, int(send.OutBoundTxParams.OutBoundTxTSSNonce))
 					if err != nil {
 						logger.Error().Err(err).Msgf("IsSendOutTxProcessed fail %s", chain)
@@ -279,12 +281,14 @@ func (co *CoreObserver) startSendScheduler() {
 						logger.Info().Msgf("send outTx already included; do not schedule")
 						continue
 					}
+					logger.Info().Msgf("IsSendOutTxProcessed : %t %t", included, confirmed)
 					chain := getTargetChain(send)
-					outTxID := fmt.Sprintf("%s/%d", chain, send.OutBoundTxParams.OutBoundTxTSSNonce)
+					outTxID := fmt.Sprintf("%s-%d", chain, send.OutBoundTxParams.OutBoundTxTSSNonce)
 
 					sinceBlock := int64(bn) - int64(send.InBoundTxParams.InBoundTxFinalizedZetaHeight)
 					// if there are many outstanding sends, then all first 20 has priority
 					// otherwise, only the first one has priority
+					logger.Info().Msgf("Checks : %d %t %s", sinceBlock, outTxMan.IsOutTxActive(outTxID), outTxID)
 					if isScheduled(sinceBlock, idx < 30) && !outTxMan.IsOutTxActive(outTxID) {
 						outTxMan.StartTryProcess(outTxID)
 						go co.TryProcessOutTx(send, sinceBlock, outTxMan)

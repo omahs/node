@@ -247,17 +247,16 @@ func (co *CoreObserver) startSendScheduler() {
 			}
 
 			if len(sendList) > 0 && bn%5 == 0 {
-				logger.Info().Msgf("#pending send: %d", len(sendList))
+				logger.Info().Msgf("#CCTX pending outbound broadcast: %d", len(sendList))
 			}
 			sendMap := splitAndSortSendListByChain(sendList)
-
-			// schedule sends
 
 			for chain, sendList := range sendMap {
 				if bn%10 == 0 {
 					logger.Info().Msgf("outstanding %d CCTX's on chain %s: range [%d,%d]", len(sendList), chain, sendList[0].OutBoundTxParams.OutBoundTxTSSNonce, sendList[len(sendList)-1].OutBoundTxParams.OutBoundTxTSSNonce)
 				}
 				for idx, send := range sendList {
+					logger.Info().Msgf("Processing CCTX: %d", len(send.Index))
 					ob, err := co.getTargetChainOb(send)
 					if err != nil {
 						logger.Error().Err(err).Msgf("getTargetChainOb fail %s", chain)
@@ -402,9 +401,10 @@ func (co *CoreObserver) TryProcessOutTx(send *types.CrossChainTx, sinceBlock int
 	}
 	signers, err := co.bridge.GetObserverList(toChain, zetaObserverModuleTypes.ObservationType_OutBoundTx.String())
 	if err != nil {
-		logger.Warn().Err(err).Msgf("unable to get observer list: chain %s observation %s", send.OutBoundTxParams.OutBoundTxTSSNonce, zetaObserverModuleTypes.ObservationType_OutBoundTx.String())
-
+		logger.Warn().Err(err).Msgf("unable to get observer list: chain %d observation %s", send.OutBoundTxParams.OutBoundTxTSSNonce, zetaObserverModuleTypes.ObservationType_OutBoundTx.String())
 	}
+	logger.Info().Msgf("Observers %s", signers)
+
 	if tx != nil {
 		outTxHash := tx.Hash().Hex()
 		logger.Info().Msgf("on chain %s nonce %d, outTxHash %s signer %s", signer.chain, send.OutBoundTxParams.OutBoundTxTSSNonce, outTxHash, myid)

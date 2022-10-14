@@ -256,13 +256,13 @@ func (co *CoreObserver) startSendScheduler() {
 					logger.Info().Msgf("outstanding %d CCTX's on chain %s: range [%d,%d]", len(sendList), chain, sendList[0].OutBoundTxParams.OutBoundTxTSSNonce, sendList[len(sendList)-1].OutBoundTxParams.OutBoundTxTSSNonce)
 				}
 				for idx, send := range sendList {
-					logger.Info().Msgf("Processing CCTX: %d", send.Index)
+					logger.Info().Msgf("Processing CCTX: %s", send.Index)
 					ob, err := co.getTargetChainOb(send)
 					if err != nil {
 						logger.Error().Err(err).Msgf("getTargetChainOb fail %s", chain)
 						continue
 					}
-					logger.Info().Msgf("Processing CCTX target chain : %d", chain)
+					logger.Info().Msgf("Processing CCTX target chain : %s", chain)
 					// update metrics
 					if idx == 0 {
 						pTxs, err := ob.GetPromGauge(metrics.PendingTxs)

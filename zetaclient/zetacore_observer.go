@@ -231,14 +231,14 @@ func (co *CoreObserver) startSendScheduler() {
 	observeTicker := time.NewTicker(3 * time.Second)
 	var lastBlockNum uint64
 	for range observeTicker.C {
-		logger.Info().Msgf("Ranging observer Ticker: %v", observeTicker)
 		bn, err := co.bridge.GetZetaBlockHeight()
 		if err != nil {
 			logger.Error().Msg("GetZetaBlockHeight fail in startSendScheduler")
 			continue
 		}
-		logger.Info().Msgf("Got new block: %d", bn)
+
 		if bn > lastBlockNum { // we have a new block
+			logger.Info().Msgf("Got new block ||| bn : %d lastBlockNum :%d", bn, lastBlockNum)
 			if bn%10 == 0 {
 				logger.Info().Msgf("ZetaCore heart beat: %d", bn)
 			}

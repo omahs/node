@@ -227,15 +227,17 @@ func (co *CoreObserver) startSendScheduler() {
 	logger := co.logger.With().Str("module", "SendScheduler").Logger()
 	outTxMan := NewOutTxProcessorManager()
 	go outTxMan.StartMonitorHealth()
-
+	logger.Info().Msg("New SendScheduler ")
 	observeTicker := time.NewTicker(3 * time.Second)
 	var lastBlockNum uint64
 	for range observeTicker.C {
+		logger.Info().Msgf("Ranging observer Ticker: %v", observeTicker)
 		bn, err := co.bridge.GetZetaBlockHeight()
 		if err != nil {
 			logger.Error().Msg("GetZetaBlockHeight fail in startSendScheduler")
 			continue
 		}
+		logger.Info().Msgf("Got new block: %d", bn)
 		if bn > lastBlockNum { // we have a new block
 			if bn%10 == 0 {
 				logger.Info().Msgf("ZetaCore heart beat: %d", bn)
@@ -262,7 +264,6 @@ func (co *CoreObserver) startSendScheduler() {
 						logger.Error().Err(err).Msgf("getTargetChainOb fail %s", chain)
 						continue
 					}
-					logger.Info().Msgf("Processing CCTX target chain : %s", chain)
 					// update metrics
 					if idx == 0 {
 						pTxs, err := ob.GetPromGauge(metrics.PendingTxs)
@@ -275,22 +276,24 @@ func (co *CoreObserver) startSendScheduler() {
 					logger.Info().Msgf("Updated Metrics : %s", send.Index)
 					included, confirmed, err := ob.IsSendOutTxProcessed(send.Index, int(send.OutBoundTxParams.OutBoundTxTSSNonce))
 					if err != nil {
-						logger.Error().Err(err).Msgf("IsSendOutTxProcessed fail %s", chain)
+						logger.Error().Err(err).Msgf("IsSendOutTxProcessed fail chain : %s", chain)
 					}
 					if included || confirmed {
 						logger.Info().Msgf("send outTx already included; do not schedule")
 						continue
 					}
-					logger.Info().Msgf("IsSendOutTxProcessed : %t %t", included, confirmed)
+					logger.Info().Msgf("IsSendOutTxProcessed ||| included: %t confirmed %t", included, confirmed)
 					chain := getTargetChain(send)
-					outTxID := fmt.Sprintf("%s-%d", chain, send.OutBoundTxParams.OutBoundTxTSSNonce)
+					outTxID := fmt.Sprintf("%s/%d", chain, send.OutBoundTxParams.OutBoundTxTSSNonce)
 
 					sinceBlock := int64(bn) - int64(send.InBoundTxParams.InBoundTxFinalizedZetaHeight)
 					// if there are many outstanding sends, then all first 20 has priority
 					// otherwise, only the first one has priority
-					logger.Info().Msgf("Checks : %d %t %s", sinceBlock, outTxMan.IsOutTxActive(outTxID), outTxID)
+					logger.Info().Msgf("Checks |||| BN %d , sinceBlock : %d idx: %d IsOutTxActive : %t outTxID :%s", bn, sinceBlock, idx, outTxMan.IsOutTxActive(outTxID), outTxID)
 					if isScheduled(sinceBlock, idx < 30) && !outTxMan.IsOutTxActive(outTxID) {
+						logger.Info().Msg("Starting StartTryProcess")
 						outTxMan.StartTryProcess(outTxID)
+						logger.Info().Msg("Starting TryProcessOutTx")
 						go co.TryProcessOutTx(send, sinceBlock, outTxMan)
 					}
 					if idx > 50 { // only look at 50 sends per chain

@@ -1,0 +1,1 @@
+PRIVKEY=223acd92e8c9d6434ee6b703b57dd0254d9c85c0be9b3f188cf9f594dd9476d8 zetaclientd -val val -log-console -enable-chains GOERLI,BSCTESTNET -pre-params ./preParams.json -chain-id athens_8888-2 -dummy-tss-signer

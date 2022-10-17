@@ -285,7 +285,7 @@ func start(validatorName string, peers addr.AddrList, zetacoreHome string) {
 
 	if *deployConnectorAndZeta {
 		log.Info().Msg("deploying connector and zeta...")
-
+		// deploy zeta_eth
 	}
 
 	for _, chain := range config.ChainsEnabled {

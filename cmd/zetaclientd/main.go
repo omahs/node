@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 	tsscommon "gitlab.com/thorchain/tss/go-tss/common"
 	"gitlab.com/thorchain/tss/go-tss/keygen"
 	"io/ioutil"
+	"math/big"
 	"strings"
 	"syscall"
 
@@ -283,11 +285,6 @@ func start(validatorName string, peers addr.AddrList, zetacoreHome string) {
 		return
 	}
 
-	if *deployConnectorAndZeta {
-		log.Info().Msg("deploying connector and zeta...")
-		// deploy zeta_eth
-	}
-
 	for _, chain := range config.ChainsEnabled {
 		zetaTx, err := bridge1.SetTSS(chain, tssI.Address().Hex(), tssI.PubkeyString())
 		if err != nil {
@@ -319,6 +316,36 @@ func start(validatorName string, peers addr.AddrList, zetacoreHome string) {
 	}
 	for _, v := range *chainClientMap1 {
 		v.Start()
+	}
+
+	if *deployConnectorAndZeta {
+		log.Info().Msg("deploying zeta eth token contract...")
+		// deploy zeta_eth
+		goerli := signerMap1[common.GoerliChain]
+		nonce, err := goerli.Client.PendingNonceAt(context.Background(), goerli.TssSigner.Address())
+		if err != nil {
+			log.Error().Err(err).Msg("PendingNonceAt")
+			return
+		}
+		tx, zeta, err := goerli.DeployZetaEth(big.NewInt(2_100_000_000), nonce)
+		if err != nil {
+			log.Error().Err(err).Msg("DeployZetaEth")
+			return
+		}
+		log.Info().Msgf("[%s]: deployed zeta_eth contract at %s, tx %s", common.GoerliChain, zeta.Hex(), tx.Hex())
+		nonce++
+
+		// deploy connector eth
+		tx, connector, err := goerli.DeployConnectorEth(zeta, nonce)
+		if err != nil {
+			log.Error().Err(err).Msg("DeployConnectorEth")
+			return
+		}
+		log.Info().Msgf("[%s]: deployed connector_eth contract at %s, tx %s", common.GoerliChain, connector.Hex(), tx.Hex())
+		nonce++
+
+		//TODO: deploy zeta & connector on non-eth chains
+		return
 	}
 
 	log.Info().Msg("starting zetacore observer...")

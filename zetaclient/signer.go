@@ -6,6 +6,10 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	"github.com/zeta-chain/zetacore/contracts/evm"
+	mcconfig "github.com/zeta-chain/zetacore/zetaclient/config"
+
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rs/zerolog"
@@ -17,11 +21,17 @@ import (
 	"time"
 )
 
+var (
+	nullHash     = ethcommon.Hash{}
+	nullAddress  = ethcommon.Address{}
+	deployerAddr = ethcommon.HexToAddress(mcconfig.DeployerAddress)
+)
+
 type Signer struct {
-	client              *ethclient.Client
+	Client              *ethclient.Client
 	chain               common.Chain
 	chainID             *big.Int
-	tssSigner           types.TSSSignerI
+	TssSigner           types.TSSSignerI
 	ethSigner           ethtypes.Signer
 	abi                 abi.ABI
 	metaContractAddress ethcommon.Address
@@ -45,9 +55,9 @@ func NewSigner(chain common.Chain, endpoint string, tssSigner types.TSSSignerI, 
 	}
 
 	return &Signer{
-		client:              client,
+		Client:              client,
 		chain:               chain,
-		tssSigner:           tssSigner,
+		TssSigner:           tssSigner,
 		chainID:             chainID,
 		ethSigner:           ethSigner,
 		abi:                 abi,
@@ -61,7 +71,7 @@ func NewSigner(chain common.Chain, endpoint string, tssSigner types.TSSSignerI, 
 func (signer *Signer) Sign(data []byte, to ethcommon.Address, gasLimit uint64, gasPrice *big.Int, nonce uint64) (*ethtypes.Transaction, []byte, []byte, error) {
 	tx := ethtypes.NewTransaction(nonce, to, big.NewInt(0), gasLimit, gasPrice, data)
 	hashBytes := signer.ethSigner.Hash(tx).Bytes()
-	sig, err := signer.tssSigner.Sign(hashBytes)
+	sig, err := signer.TssSigner.Sign(hashBytes)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -82,7 +92,7 @@ func (signer *Signer) Sign(data []byte, to ethcommon.Address, gasLimit uint64, g
 func (signer *Signer) Broadcast(tx *ethtypes.Transaction) error {
 	ctxt, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	return signer.client.SendTransaction(ctxt, tx)
+	return signer.Client.SendTransaction(ctxt, tx)
 }
 
 //    function onReceive(
@@ -140,9 +150,9 @@ func (signer *Signer) SignRevertTx(sender ethcommon.Address, srcChainID *big.Int
 }
 
 func (signer *Signer) SignCancelTx(nonce uint64, gasPrice *big.Int) (*ethtypes.Transaction, error) {
-	tx := ethtypes.NewTransaction(nonce, signer.tssSigner.Address(), big.NewInt(0), 21000, gasPrice, nil)
+	tx := ethtypes.NewTransaction(nonce, signer.TssSigner.Address(), big.NewInt(0), 21000, gasPrice, nil)
 	hashBytes := signer.ethSigner.Hash(tx).Bytes()
-	sig, err := signer.tssSigner.Sign(hashBytes)
+	sig, err := signer.TssSigner.Sign(hashBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -158,4 +168,143 @@ func (signer *Signer) SignCancelTx(nonce uint64, gasPrice *big.Int) (*ethtypes.T
 	}
 
 	return signedTX, nil
+}
+
+// bytecode is hex string, withouth 0x prefix
+func (signer *Signer) SignContractDeployTx(nonce uint64, gasPrice *big.Int, gasLimit uint64, cABI *abi.ABI, bytecode evmtypes.HexString, args ...interface{}) (*ethtypes.Transaction, error) {
+	ctorArgs, err := cABI.Pack(
+		"", // function--empty string for constructor
+		args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	data := make([]byte, len(bytecode)+len(ctorArgs))
+	copy(data[:len(bytecode)], bytecode)
+	copy(data[len(bytecode):], ctorArgs)
+	tx := ethtypes.NewContractCreation(nonce, big.NewInt(0), gasLimit, gasPrice, data)
+	hashBytes := signer.ethSigner.Hash(tx).Bytes()
+	sig, err := signer.TssSigner.Sign(hashBytes)
+	if err != nil {
+		return nil, err
+	}
+	pubk, err := crypto.SigToPub(hashBytes, sig[:])
+	if err != nil {
+		signer.logger.Error().Err(err).Msgf("SigToPub error")
+	}
+	addr := crypto.PubkeyToAddress(*pubk)
+	signer.logger.Info().Msgf("Sign: Ecrecovery of signature: %s", addr.Hex())
+	signedTX, err := tx.WithSignature(signer.ethSigner, sig[:])
+	if err != nil {
+		return nil, err
+	}
+
+	return signedTX, nil
+}
+
+//TODO: move contract creation directive to zetacore; and register contract address with zetacore
+func (signer *Signer) DeployZetaEth(initialSupply *big.Int, nonce uint64) (ethcommon.Hash, ethcommon.Address, error) {
+
+	gasPrice, err := signer.Client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+	cABI, err := evm.ZetaEthMetaData.GetAbi()
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+
+	tx, err := signer.SignContractDeployTx(nonce, gasPrice, 1_000_000, cABI, evm.ZetaEthContract.Bin, initialSupply)
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+
+	err = signer.Broadcast(tx)
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+
+	contractAddr := crypto.CreateAddress(signer.TssSigner.Address(), nonce)
+
+	return tx.Hash(), contractAddr, nil
+}
+
+func (signer *Signer) DeployZetaNonEth(nonce uint64) (ethcommon.Hash, ethcommon.Address, error) {
+	gasPrice, err := signer.Client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+	cABI, err := evm.ZetaNonEthMetaData.GetAbi()
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+
+	tx, err := signer.SignContractDeployTx(nonce, gasPrice, 1_000_000, cABI, evm.ZetaNonEthContract.Bin,
+		signer.TssSigner.Address(), deployerAddr)
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+
+	err = signer.Broadcast(tx)
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+
+	contractAddr := crypto.CreateAddress(signer.TssSigner.Address(), nonce)
+
+	return tx.Hash(), contractAddr, nil
+}
+
+func (signer *Signer) DeployConnectorEth(zetaTokenAddress ethcommon.Address, nonce uint64) (ethcommon.Hash, ethcommon.Address, error) {
+	gasPrice, err := signer.Client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+	cABI, err := evm.ConnectorMetaData.GetAbi()
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+
+	tx, err := signer.SignContractDeployTx(nonce, gasPrice, 2_000_000, cABI, evm.ConnectorEthContract.Bin,
+		// zetaTokenAddress, tss, tssUpdater, pauser
+		zetaTokenAddress, signer.TssSigner.Address(), deployerAddr, deployerAddr,
+	)
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+
+	err = signer.Broadcast(tx)
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+
+	contractAddr := crypto.CreateAddress(signer.TssSigner.Address(), nonce)
+	return tx.Hash(), contractAddr, nil
+}
+
+func (signer *Signer) DeployConnectorNonEth(zetaTokenAddress ethcommon.Address, nonce uint64) (ethcommon.Hash, ethcommon.Address, error) {
+	gasPrice, err := signer.Client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+	cABI, err := evm.ConnectorMetaData.GetAbi()
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+
+	tx, err := signer.SignContractDeployTx(nonce, gasPrice, 2_000_000, cABI, evm.ConnectorNonEthContract.Bin,
+		// zetaTokenAddress, tss, tssUpdater, pauser
+		zetaTokenAddress, signer.TssSigner.Address(), deployerAddr, deployerAddr,
+	)
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+
+	err = signer.Broadcast(tx)
+	if err != nil {
+		return nullHash, nullAddress, err
+	}
+
+	contractAddr := crypto.CreateAddress(signer.TssSigner.Address(), nonce)
+	return tx.Hash(), contractAddr, nil
 }

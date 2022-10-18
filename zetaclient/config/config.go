@@ -27,6 +27,7 @@ const (
 	TssTestPrivkey = "2082bc9775d6ee5a05ef221a9d1c00b3cc3ecb274a4317acc0a182bc1e05d1bb"
 	TssTestAddress = "0xE80B6467863EbF8865092544f441da8fD3cF6074"
 	//TestReceiver  = "0x566bF3b1993FFd4BA134c107A63bb2aebAcCdbA0"
+	DeployerAddress = "0x7274D1d5dDDEF36Aac53DD45b93487CE01Ef0A55"
 )
 
 // Constants

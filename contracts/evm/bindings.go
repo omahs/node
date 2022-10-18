@@ -1,5 +1,4 @@
-//go:generate sh -c "cat ConnectorEth.json | jq .abi | abigen --abi - --pkg evm --type ConnectorEth --out ConnectorEth.go"
-//go:generate sh -c "cat ConnectorNonEth.json | jq .abi | abigen --abi - --pkg evm --type ConnectorNonEth --out ConnectorNonEth.go"
+//go:generate sh -c "cat ConnectorEth.json | jq .abi | abigen --abi - --pkg evm --type Connector --out ConnectorEth.go"
 //go:generate sh -c "cat ZetaEth.json | jq .abi | abigen --abi - --pkg evm --type ZetaEth --out ZetaEth.go"
 //go:generate sh -c "cat ZetaNonEth.json | jq .abi | abigen --abi - --pkg evm --type ZetaNonEth --out ZetaNonEth.go"
 
@@ -17,8 +16,7 @@ type CompiledContract struct {
 	Bin evmtypes.HexString
 }
 
-var _ = ConnectorEth{}
-var _ = ConnectorNonEth{}
+var _ = Connector{}
 var _ = ZetaEth{}
 var _ = ZetaNonEth{}
 

@@ -148,6 +148,7 @@ func main() {
 			log.Error().Err(err).Msgf("fail to create connector %s", c)
 			continue
 		}
+		nonceToHash := make(map[uint64]string)
 		if *fixFile != "" {
 			f, err := os.Open(*fixFile)
 			if err != nil {
@@ -166,17 +167,33 @@ func main() {
 					continue
 				}
 				txhash := fields[1]
-				zTxHash, err := bridge.AddTxHashToOutTxTracker(chain.String(), nonce, txhash)
-				if err != nil {
-					log.Error().Err(err).Msgf("  fail to add txhash to outTxTracker")
-					continue
-				}
-				log.Info().Msgf("chain %s nonce %d txhash %s outTxTracker tx: %s", chain.String(), nonce, txhash, zTxHash)
-				fmt.Scanln() // wait for Enter Key
+				nonceToHash[nonce] = txhash
+				//zTxHash, err := bridge.AddTxHashToOutTxTracker(chain.String(), nonce, txhash)
+				//if err != nil {
+				//	log.Error().Err(err).Msgf("  fail to add txhash to outTxTracker")
+				//	continue
+				//}
+				//log.Info().Msgf("chain %s nonce %d txhash %s outTxTracker tx: %s", chain.String(), nonce, txhash, zTxHash)
+				//fmt.Scanln() // wait for Enter Key
+
 			}
 		}
 		for _, interval := range intervals {
 			for _, nonce := range interval {
+				if *fixFile != "" {
+					txhash, found := nonceToHash[nonce]
+					if !found {
+						log.Info().Msgf("  nonce %d not found in fix file; skip", nonce)
+						continue
+					}
+					zTxHash, err := bridge.AddTxHashToOutTxTracker(chain.String(), nonce, txhash)
+					if err != nil {
+						log.Error().Err(err).Msgf("  fail to add txhash to outTxTracker")
+						continue
+					}
+					log.Info().Msgf("  chain %s add nonce %d txhash %s; zhash ", chain, nonce, txhash, zTxHash)
+					fmt.Scanln() // wait for Enter Key
+				}
 				if nonce == *fix {
 					outTxID := fmt.Sprintf("%s-%d", c, nonce)
 					log.Info().Msgf("  fixing %s", outTxID)
@@ -234,6 +251,7 @@ func main() {
 						log.Info().Msgf("  outTxTracker tx: %s", zTxHash)
 					}
 				}
+
 			}
 
 		}

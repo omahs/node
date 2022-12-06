@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/nanmu42/etherscan-api"
 	"github.com/rs/zerolog/log"
 	"github.com/zeta-chain/zetacore/cmd"
 	"github.com/zeta-chain/zetacore/common"
@@ -24,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 )
 
 var (
@@ -39,6 +41,7 @@ func main() {
 	fix := flag.Uint64("fix-nonce", 0, "fix nonce for TSS address")
 	fixHash := flag.String("fix-hash", "", "fix hash for TSS address")
 	fixFile := flag.String("fix-file", "", "fix file (format: list of line: nonce txahsh)")
+	fixStartBlock := flag.Int64("fix-start-block", 0, "fix start block for querying etherscan")
 	flag.Parse()
 	chains := strings.Split(*enabledChains, ",")
 	NewIndex = *newIndex
@@ -107,7 +110,7 @@ func main() {
 	nonceToCctx := make(map[string]*types.CrossChainTx)
 
 	log.Info().Msgf("pending cctx: %d", len(pendingCctx))
-	sendMap := splitAndSortSendListByChain(pendingCctx)
+	sendMap := mc.SplitAndSortSendListByChain(pendingCctx)
 	for _, c := range chains {
 		list := sendMap[c]
 		var nonces []uint64
@@ -125,7 +128,21 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		log.Info().Msgf("outTxTracker: %d", len(outTxTracker))
+		sort.SliceStable(outTxTracker, func(i, j int) bool {
+			return outTxTracker[i].Nonce < outTxTracker[j].Nonce
+		})
+		nonceToOutTxTracker := make(map[uint64]*types.OutTxTracker)
+		nonceSeq := make([]uint64, 0)
+		for _, outTx := range outTxTracker {
+			nonce, _ := strconv.ParseUint(outTx.Nonce, 10, 64)
+			nonceToOutTxTracker[nonce] = &outTx
+			nonceSeq = append(nonceSeq, nonce)
+		}
+		nonceIntervals := BreakSortedSequenceIntoIntervals(nonceSeq)
+		log.Info().Msgf("chain %s outTxTracker: %d", c, len(outTxTracker))
+		for _, interval := range nonceIntervals {
+			log.Info().Msgf("  chain %s nonce interval: %d - %d", c, interval[0], interval[len(interval)-1])
+		}
 
 		log.Info().Msgf("chain %s has %d pending cctx, divided into %d intervals", c, len(list), len(BreakSortedSequenceIntoIntervals(nonces)))
 		intervals := BreakSortedSequenceIntoIntervals(nonces)
@@ -178,9 +195,44 @@ func main() {
 
 			}
 		}
-		for _, interval := range intervals {
+		if *fixStartBlock != 0 {
+			baseURLMap := map[string]string{
+				"MUMBAI": "https://api-testnet.polygonscan.com/api?",
+			}
+			client := etherscan.NewCustomized(etherscan.Customization{
+				Timeout: 15 * time.Second,
+				Key:     "You key here",
+				BaseURL: baseURLMap[c],
+				Verbose: false,
+			})
+			start := int(*fixStartBlock)
+			page := int(1)
+			for {
+				log.Info().Msgf("querying from block %d; page %d", start, page)
+				txs, err := client.NormalTxByAddress("0x7c125C1d515b8945841b3d5144a060115C58725F", &start, nil, page, 100, false)
+				if err != nil {
+					log.Error().Err(err).Msgf("fail to get txs from etherscan")
+					break
+				}
+				if len(txs) == 0 {
+					log.Warn().Msgf("no txs found")
+					break
+				}
+				log.Info().Msgf("etherscan found %d txs; starting from nonce %d", len(txs), txs[0].Nonce)
+				for _, tx := range txs {
+					if ethcommon.HexToAddress(tx.From) == ethcommon.HexToAddress("0x7c125C1d515b8945841b3d5144a060115C58725F") {
+						//log.Debug().Msgf("  %d %s", tx.Nonce, tx.Hash)
+						nonceToHash[uint64(tx.Nonce)] = tx.Hash
+					}
+				}
+				page++
+				time.Sleep(3 * time.Second)
+			}
+
+		}
+		for idx, interval := range intervals {
 			for _, nonce := range interval {
-				if *fixFile != "" {
+				if *fixFile != "" || *fixStartBlock != 0 && idx != len(intervals)-1 {
 					txhash, found := nonceToHash[nonce]
 					if !found {
 						log.Info().Msgf("  nonce %d not found in fix file; skip", nonce)
@@ -191,7 +243,7 @@ func main() {
 						log.Error().Err(err).Msgf("  fail to add txhash to outTxTracker")
 						continue
 					}
-					log.Info().Msgf("  chain %s add nonce %d txhash %s; zhash ", chain, nonce, txhash, zTxHash)
+					log.Info().Msgf("  chain %s add nonce %d txhash %s; zhash %s", chain, nonce, txhash, zTxHash)
 					fmt.Scanln() // wait for Enter Key
 				}
 				if nonce == *fix {
@@ -275,6 +327,7 @@ func splitAndSortSendListByChain(sendList []*types.CrossChainTx) map[string][]*t
 		sort.Slice(sends, func(i, j int) bool {
 			return sends[i].OutBoundTxParams.OutBoundTxTSSNonce < sends[j].OutBoundTxParams.OutBoundTxTSSNonce
 		})
+
 	}
 	return sendMap
 }

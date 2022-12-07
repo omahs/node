@@ -48,6 +48,17 @@ func (b *ZetaCoreBridge) AddTxHashToOutTxTracker(chain string, nonce uint64, txH
 	return zetaTxHash, nil
 }
 
+func (b *ZetaCoreBridge) RemoveTxHashToOutTxTracker(chain string, nonce uint64) (string, error) {
+	signerAddress := b.keys.GetSignerInfo().GetAddress().String()
+	msg := types.NewMsgRemoveFromOutTxTracker(signerAddress, chain, nonce)
+	zetaTxHash, err := b.Broadcast(AddTxHashToOutTxTrackerGasLimit, msg)
+	if err != nil {
+		b.logger.Error().Err(err).Msg("RemoveTxHashToOutTxTracker broadcast fail")
+		return "", err
+	}
+	return zetaTxHash, nil
+}
+
 func (b *ZetaCoreBridge) PostNonce(chain common.Chain, nonce uint64) (string, error) {
 	signerAddress := b.keys.GetSignerInfo().GetAddress().String()
 	msg := types.NewMsgNonceVoter(signerAddress, chain.String(), nonce)

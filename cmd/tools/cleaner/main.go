@@ -42,6 +42,7 @@ func main() {
 	fixHash := flag.String("fix-hash", "", "fix hash for TSS address")
 	fixFile := flag.String("fix-file", "", "fix file (format: list of line: nonce txahsh)")
 	fixStartBlock := flag.Int64("fix-start-block", 0, "fix start block for querying etherscan")
+	fixTracker := flag.Bool("fix-tracker", false, "fix tracker")
 	flag.Parse()
 	chains := strings.Split(*enabledChains, ",")
 	NewIndex = *newIndex
@@ -229,6 +230,21 @@ func main() {
 				time.Sleep(3 * time.Second)
 			}
 
+		}
+		if *fixTracker {
+			for nonce, _ := range nonceToOutTxTracker {
+				outTxID := fmt.Sprintf("%s-%d", c, nonce)
+				if _, ok := nonceToCctx[outTxID]; !ok {
+					log.Error().Msgf("chain %s nonce %d not found in pending cctx; remove it?", c, nonce)
+					fmt.Scanln()
+					zTxHash, err := bridge.RemoveTxHashToOutTxTracker(chain.String(), nonce)
+					if err != nil {
+						log.Error().Err(err).Msgf("  fail to remove txhash from outTxTracker")
+						continue
+					}
+					log.Info().Msgf("chain %s nonce %d removed from outTxTracker tx: %s", chain.String(), nonce, zTxHash)
+				}
+			}
 		}
 		for idx, interval := range intervals {
 			for _, nonce := range interval {

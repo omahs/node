@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -12,7 +13,9 @@ const releaseVersion = "1.1.6-rc1"
 func SetupHandlers(app *App) {
 	app.UpgradeKeeper.SetUpgradeHandler(releaseVersion, func(ctx sdk.Context, plan types.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		app.Logger().Info("Running upgrade handler for " + releaseVersion)
-
+		for k, v := range vm {
+			fmt.Println(k, "---", v)
+		}
 		return app.mm.RunMigrations(ctx, app.configurator, vm)
 	})
 

@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -17,9 +16,7 @@ func SetupHandlers(app *App) {
 		for m, mb := range app.mm.Modules {
 			vm[m] = mb.ConsensusVersion()
 		}
-		for k, v := range vm {
-			fmt.Println(k, "---", v)
-		}
+
 		return app.mm.RunMigrations(ctx, app.configurator, vm)
 	})
 

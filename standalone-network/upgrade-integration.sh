@@ -49,6 +49,7 @@ mkdir -p  $GOPATH/bin/old
 mkdir -p  $GOPATH/bin/new
 
 git checkout $CurrentBinary
+git pull
 make install-zetacore
 cp $GOPATH/bin/zetacored $GOPATH/bin/old/
 zetacored init test --chain-id=localnet_101-1 -o
@@ -82,6 +83,7 @@ mkdir -p $DAEMON_HOME/cosmovisor/upgrades/$UpgradeName/bin
 
 # Setup new binary
 git checkout $NewBinary
+git pull
 rm -rf $GOPATH/bin/zetacored
 make install
 cp $GOPATH/bin/zetacored $GOPATH/bin/new/

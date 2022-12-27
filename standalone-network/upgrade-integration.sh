@@ -28,7 +28,7 @@ then
 fi
 
 
-export DAEMON_HOME=$HOME/.zetacore
+export DAEMON_HOME=$HOME/.zetacored
 export DAEMON_NAME=zetacored
 export DAEMON_ALLOW_DOWNLOAD_BINARIES=true
 export DAEMON_RESTART_AFTER_UPGRADE=true
@@ -105,7 +105,7 @@ echo "${contents}" > $DAEMON_HOME/config/genesis.json
 
 # Add state data here if required
 
-cosmovisor start --home ~/.zetacore/ --p2p.laddr 0.0.0.0:27655  --grpc.address 0.0.0.0:9096 --grpc-web.address 0.0.0.0:9093 --address tcp://0.0.0.0:27659 --rpc.laddr tcp://127.0.0.1:26657 >> zetanode.log 2>&1  &
+cosmovisor start --home ~/.zetacored/ --p2p.laddr 0.0.0.0:27655  --grpc.address 0.0.0.0:9096 --grpc-web.address 0.0.0.0:9093 --address tcp://0.0.0.0:27659 --rpc.laddr tcp://127.0.0.1:26657 >> zetanode.log 2>&1  &
 
 sleep 7
 zetacored tx gov submit-proposal software-upgrade $UpgradeName --from zeta --deposit 100000000stake --upgrade-height 10 --title $UpgradeName --description $UpgradeName --keyring-backend test --chain-id localnet --yes

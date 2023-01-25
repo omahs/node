@@ -12,8 +12,8 @@ As a development testing environment, the setup aims to be
 flexible, close to real world, and with fast turnaround
 between edit code -> compile -> test results. 
 
-This is primarily tested on a recent Linux distribution such
-as Ubuntu 22.04 LTS, though macOS should also work (not tested). 
+This has been regularly tested on MacOS (M1, with x86
+based Docker), and Linux (Ubuntu 22.04). 
 
 The docker-compose.yml file defines a network with:
 

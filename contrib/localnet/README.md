@@ -23,6 +23,14 @@ The docker-compose.yml file defines a network with:
 * 1 bitcoin core private node (planned; not yet done)
 * 1 orchestrator node which coordinates smoke tests. 
 
+## Ports / Endpoints
+Right now the following ports are exposed on host to
+facilitate exploration and debugging.
+
+- 8545: the Ethereum localnet RPC port
+- 18545: the ZetaChain EVM RPC port 
+- 1317: the ZetaChain REST API port
+
 ## Prerequisites
 - [Docker](https://docs.docker.com/install/)
 - [Docker Compose](https://docs.docker.com/compose/install/)

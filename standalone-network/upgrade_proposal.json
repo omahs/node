@@ -1,0 +1,21 @@
+{
+  "messages": [
+    {
+      "@type": "/cosmos.gov.v1beta1.MsgSubmitProposal",
+      "content": {
+        "@type": "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
+        "title": "UpgradeName",
+        "description": "UpgradeName",
+        "plan": {
+          "name": "upgradename",
+          "time": "0001-01-01T00:00:00Z",
+          "height": "6000",
+          "info": "test",
+          "upgraded_client_state": null
+        }
+      }
+    }
+  ],
+  "metadata": "",
+  "deposit": "100000000azeta"
+}

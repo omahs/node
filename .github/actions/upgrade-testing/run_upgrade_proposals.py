@@ -71,7 +71,8 @@ for version in UPGRADE_DATA["upgrade_versions"]:
     logger.log.info("**************************get proposal id**************************")
     PROPOSAL_ID = command_runner.get_proposal_id()
     logger.log.info(PROPOSAL_ID)
-
+    command_runner.get_docker_container_logs()
+    
     logger.log.info(f"raise governance vote on proposal id: {PROPOSAL_ID}")
     vote_output = command_runner.raise_governance_vote(PROPOSAL_ID)
     logger.log.info(f"""**************************UPGRADE INFO**************************

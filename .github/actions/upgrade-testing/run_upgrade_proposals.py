@@ -8,33 +8,6 @@ import sys
 
 logger = Logger()
 
-os.environ["GITHUB_TOKEN"]="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"
-os.environ["GITHUB_OWNER"]="zeta-chain"
-os.environ["GITHUB_REPO"]="zeta-node"
-os.environ["DOCKER_FILE_LOCATION"]="."
-os.environ["MONIKER"]="zeta"
-os.environ["CHAIN_ID"]="test_1001-1"
-os.environ["NODE"]="http://127.0.0.1:26657"
-#os.environ["GO_PATH"]="/home/runner/work/zeta-node/zeta-node/"
-os.environ["GO_PATH"]="/Users/grantzukel/go/bin/"
-os.environ["STARTING_VERSION"]="athens2-v1.1.15"
-os.environ["BLOCK_TIME_SECONDS"]="4"
-os.environ["PROPOSAL_TIME_SECONDS"]="60"
-os.environ["GAS_PRICES"]="0.1azeta"
-os.environ["DAEMON_HOME"]="/root/.zetacored/"
-os.environ["DAEMON_NAME"]="zetacored"
-os.environ["DENOM"]="azeta"
-os.environ["DAEMON_ALLOW_DOWNLOAD_BINARIES"]="false"
-os.environ["DAEMON_RESTART_AFTER_UPGRADE"]="true"
-os.environ["EXTERNAL_IP"]="127.0.0.1"
-os.environ["LOG_LEVEL"]="info"
-os.environ["UNSAFE_SKIP_BACKUP"]="true"
-os.environ["CLIENT_DAEMON_NAME"]="zetaclientd"
-os.environ["CLIENT_DAEMON_ARGS"]="-enable-chains,GOERLI,-val,zeta"
-os.environ["CLIENT_SKIP_UPGRADE"]="true"
-os.environ["CLIENT_START_PROCESS"]="false"
-
-
 logger.log.info("**************************Initiate GitHub Binary Downloader**************************")
 binary_downloader = GithubBinaryDownload(os.environ["GITHUB_TOKEN"], os.environ["GITHUB_OWNER"], os.environ["GITHUB_REPO"])
 

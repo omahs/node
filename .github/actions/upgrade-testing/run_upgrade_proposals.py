@@ -48,6 +48,9 @@ command_runner.start_docker_container(os.environ["GAS_PRICES"],
 time.sleep(10)
 logger.log.info("**************************check docker containers**************************")
 command_runner.docker_ps()
+command_runner.get_docker_container_logs()
+time.sleep(30)
+command_runner.get_docker_container_logs()
 
 logger.log.info("**************************start upgrade process, open upgrades.json and read what upgrades to start.**************************")
 UPGRADE_DATA = json.loads(open("upgrades.json", "r").read())

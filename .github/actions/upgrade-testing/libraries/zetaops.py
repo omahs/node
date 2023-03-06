@@ -167,7 +167,7 @@ class Utilities:
 
     def raise_governance_vote(self, PROPOSAL_ID):
         self.logger.info("********* VOTE PROPOSAL **************")
-        VOTE_PROPOSAL=f"""zetacored tx gov vote "{PROPOSAL_ID}" yes \
+        VOTE_PROPOSAL=f"""zetacored tx gov vote {PROPOSAL_ID} yes \
             --from {self.MONIKER} \
             --keyring-backend test \
             --chain-id {self.CHAIN_ID} \

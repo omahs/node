@@ -93,6 +93,7 @@ class Utilities:
     def get_proposal_id(self):
         try:
             QUERY_GOV_PROPOSAL = f"""zetacored query gov proposals --output json --node {self.NODE}"""
+            self.logger.info(QUERY_GOV_PROPOSAL)
             GOV_PROPOSALS = json.loads(self.run_command(QUERY_GOV_PROPOSAL))
             self.logger.info(GOV_PROPOSALS["proposals"])
             for proposal in GOV_PROPOSALS["proposals"]:
@@ -108,7 +109,7 @@ class Utilities:
         except Exception as e:
             self.logger.error(e)
             self.proposal_id = self.proposal_id + 1
-            return self.proposal
+            return self.proposal_id
 
     def raise_governance_proposal(self,VERSION,BLOCK_TIME_SECONDS, PROPOSAL_TIME_SECONDS, UPGRADE_INFO):
         try:

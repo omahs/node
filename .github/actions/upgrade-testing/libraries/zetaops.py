@@ -64,6 +64,11 @@ class Utilities:
         cmd = COMMAND_PREFIX + cmd
         result = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True)
         result_output = result.stdout.decode('utf-8')
+        try:
+            error_output = result.stderr.decode('utf-8')
+            self.logger.error(str(error_output))
+        except Exception as e:
+            self.logger.error(str(e))
         return result_output
 
     def run_command_all_output(self, cmd):
@@ -197,7 +202,7 @@ class Utilities:
 
     def build_docker_image(self, docker_file_location):
         self.logger.info("Build Docker Image")
-        docker_build_output = self.run_command(f'docker build -t local/upgrade-test:latest {docker_file_location}')
+        docker_build_output = self.run_command(f'docker buildx build --platform linux/amd64 -t local/upgrade-test:latest {docker_file_location}')
         self.logger.info(docker_build_output)
         docker_image_list = self.run_command("docker image list")
         self.logger.info(docker_image_list)
@@ -241,7 +246,7 @@ class Utilities:
         self.logger.info("kill running containers.")
         self.kill_docker_containers()
         self.logger.info("Start local network contianer.")
-        docker_command = f'docker run {DOCKER_ENVS} -d -p 26657:26657 local/upgrade-test:latest'
+        docker_command = f'docker run {DOCKER_ENVS} --platform linux/amd64 -d -p 26657:26657 local/upgrade-test:latest'
         self.logger.info(docker_command)
         self.run_command(docker_command)
         container_id = self.run_command("docker ps | grep -v COMMAND | cut -d ' ' -f 1 | tr -d ' '")

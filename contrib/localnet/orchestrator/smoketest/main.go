@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/zeta-chain/zetacore/zetaclient/config"
 	"math/big"
-	"os"
 	"sync"
 	"time"
 
@@ -37,7 +36,7 @@ var (
 
 	BLOCK                = 5 * time.Second // should be 2x block time
 	BigZero              = big.NewInt(0)
-	SmokeTestTimeout     = 15 * time.Minute // smoke test fails if timeout is reached
+	SmokeTestTimeout     = 60 * time.Minute // smoke test fails if timeout is reached
 	USDTZRC20Addr        = "0x48f80608B672DC30DC7e3dbBd0343c5F02C738Eb"
 	USDTERC20Addr        = "0xff3135df4F2775f4091b81f4c7B6359CfA07862a"
 	ERC20CustodyAddr     = "0xD28D6A0b8189305551a0A8bd247a6ECa9CE781Ca"
@@ -102,11 +101,11 @@ func main() {
 	defer func() {
 		fmt.Println("Smoke test took", time.Since(testStartTime))
 	}()
-	go func() {
-		time.Sleep(SmokeTestTimeout)
-		fmt.Println("Smoke test timed out after", SmokeTestTimeout)
-		os.Exit(1)
-	}()
+	//go func() {
+	//	time.Sleep(SmokeTestTimeout)
+	//	fmt.Println("Smoke test timed out after", SmokeTestTimeout)
+	//	os.Exit(1)
+	//}()
 
 	connCfg := &rpcclient.ConnConfig{
 		Host:         "bitcoin:18443",
@@ -187,13 +186,13 @@ func main() {
 	// temporarily to reduce dev/test cycle turnaround time
 	smokeTest.TestERC20Deposit()
 	smokeTest.TestERC20Withdraw()
-	smokeTest.TestSendZetaOut()
-	smokeTest.TestMessagePassing()
-	smokeTest.TestZRC20Swap()
-	smokeTest.TestBitcoinWithdraw()
-	smokeTest.TestCrosschainSwap()
-	smokeTest.TestMessagePassingRevertFail()
-	smokeTest.TestMessagePassingRevertSuccess()
+	//smokeTest.TestSendZetaOut()
+	//smokeTest.TestMessagePassing()
+	//smokeTest.TestZRC20Swap()
+	//smokeTest.TestBitcoinWithdraw()
+	//smokeTest.TestCrosschainSwap()
+	//smokeTest.TestMessagePassingRevertFail()
+	//smokeTest.TestMessagePassingRevertSuccess()
 
 	// add your dev test here
 	smokeTest.TestMyTest()

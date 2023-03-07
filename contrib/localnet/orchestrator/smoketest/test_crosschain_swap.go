@@ -86,15 +86,18 @@ func (sm *SmokeTest) TestCrosschainSwap() {
 		msg = append(msg, 0)
 	}
 	msg = append(msg, btcMinOutAmount.Bytes()...)
-	// Should deposit USDT for swap, swap for BTC and withdraw BTC
-	txhash = sm.DepositERC20(big.NewInt(8e7), msg)
-	cctx1 := WaitCctxMinedByInTxHash(txhash.Hex(), sm.cctxClient)
 
-	_, err = sm.btcRPCClient.GenerateToAddress(10, BTCDeployerAddress, nil)
-	if err != nil {
-		panic(err)
+	for {
+		// Should deposit USDT for swap, swap for BTC and withdraw BTC
+		txhash = sm.DepositERC20(big.NewInt(4e7), msg)
+		cctx1 := WaitCctxMinedByInTxHash(txhash.Hex(), sm.cctxClient)
+
+		_, err = sm.btcRPCClient.GenerateToAddress(10, BTCDeployerAddress, nil)
+		if err != nil {
+			panic(err)
+		}
+		// cctx1 index acts like the inTxHash for the second cctx (the one that withdraws BTC)
+		cctx2 := WaitCctxMinedByInTxHash(cctx1.Index, sm.cctxClient)
+		_ = cctx2
 	}
-	// cctx1 index acts like the inTxHash for the second cctx (the one that withdraws BTC)
-	cctx2 := WaitCctxMinedByInTxHash(cctx1.Index, sm.cctxClient)
-	_ = cctx2
 }

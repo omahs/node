@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/zeta-chain/zetacore/contracts/zevm"
 	"math/big"
+	"net/http"
 	"time"
 )
 
@@ -22,11 +23,21 @@ var (
 	zevmRPCEndpoint = "https://api.athens2.zetachain.com/evm"
 )
 
+type Server struct {
+	zevmClient *ethclient.Client
+	ethPair    *zevm.UniswapV2Pair
+	bnbPair    *zevm.UniswapV2Pair
+	maticPair  *zevm.UniswapV2Pair
+}
+
 func main() {
+	server := &Server{}
 	zevmClient, err := ethclient.Dial(zevmRPCEndpoint)
 	if err != nil {
 		panic(err)
 	}
+	server.zevmClient = zevmClient
+
 	ethPair, err := zevm.NewUniswapV2Pair(gETHPair, zevmClient)
 	if err != nil {
 		panic(err)
@@ -39,6 +50,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	server.ethPair = ethPair
+	server.bnbPair = bnbPair
+	server.maticPair = maticPair
+
+	http.HandleFunc("/", server.reserveHandler)
+	http.ListenAndServe(":8088", nil)
 
 	res, err := bnbPair.GetReserves(&bind.CallOpts{})
 	if err != nil {
@@ -66,4 +83,34 @@ func main() {
 	fmt.Printf("  Reserve0: %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(res.Reserve0), big.NewFloat(1e18)))
 	fmt.Printf("  Reserve1: %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(res.Reserve1), big.NewFloat(1e18)))
 	fmt.Printf("  BlockTimestampLast: %v\n", time.Unix(int64(res.BlockTimestampLast), 0))
+}
+
+func (s *Server) reserveHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "zEVM system pool reserves\n\n")
+	res, err := s.bnbPair.GetReserves(&bind.CallOpts{})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Fprintf(w, "tBNB/ZETA pool reserves:\n")
+	fmt.Fprintf(w, "  Reserve0: %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(res.Reserve0), big.NewFloat(1e18)))
+	fmt.Fprintf(w, "  Reserve1: %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(res.Reserve1), big.NewFloat(1e18)))
+	fmt.Fprintf(w, "  BlockTimestampLast: %v\n", time.Unix(int64(res.BlockTimestampLast), 0))
+
+	res, err = s.maticPair.GetReserves(&bind.CallOpts{})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Fprintf(w, "tMATIC/ZETA pool reserves:\n")
+	fmt.Fprintf(w, "  Reserve0: %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(res.Reserve0), big.NewFloat(1e18)))
+	fmt.Fprintf(w, "  Reserve1: %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(res.Reserve1), big.NewFloat(1e18)))
+	fmt.Fprintf(w, "  BlockTimestampLast: %v\n", time.Unix(int64(res.BlockTimestampLast), 0))
+
+	res, err = s.ethPair.GetReserves(&bind.CallOpts{})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Fprintf(w, "gETH/ZETA pool reserves:\n")
+	fmt.Fprintf(w, "  Reserve0: %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(res.Reserve0), big.NewFloat(1e18)))
+	fmt.Fprintf(w, "  Reserve1: %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(res.Reserve1), big.NewFloat(1e18)))
+	fmt.Fprintf(w, "  BlockTimestampLast: %v\n", time.Unix(int64(res.BlockTimestampLast), 0))
 }

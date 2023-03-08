@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto"
 	maddr "github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -32,12 +33,14 @@ var StartCmd = &cobra.Command{
 var startArgs = startArguments{}
 
 type startArguments struct {
-	debug bool
+	debug    bool
+	debugTSS bool
 }
 
 func init() {
 	RootCmd.AddCommand(StartCmd)
 	StartCmd.Flags().BoolVar(&startArgs.debug, "debug", false, "debug mode: lower zerolog level to DEBUG")
+	StartCmd.Flags().BoolVar(&startArgs.debugTSS, "debug-tss", false, "debug TSS mode: mock keysign only")
 }
 
 func start(_ *cobra.Command, _ []string) error {
@@ -85,6 +88,54 @@ func start(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		log.Error().Err(err).Msg("NewTSS error")
 		return err
+	}
+
+	// Debug TSS mode
+	if startArgs.debugTSS {
+		log.Info().Msgf("Debug TSS mode")
+		var lastBlockNum uint64 = 0
+		errCnt := 0
+		numActiveKeysign := 0
+		for {
+			time.Sleep(1 * time.Second)
+			bn, err := bridge1.GetBlockHeight()
+			if err != nil {
+				continue
+			}
+			if bn <= lastBlockNum {
+				continue
+			}
+
+			repeat := 1
+			for i := 0; i < repeat; i++ {
+				log.Info().Msgf("bn.i = %d.%d", bn, i)
+				go func() {
+					message := fmt.Sprintf("bn.i = %d.%d", bn, i)
+					hash := crypto.Keccak256([]byte(message))
+					numActiveKeysign++
+					_, err := tss.Sign(hash)
+					if err != nil {
+						log.Error().Err(err).Msgf("tss.Sign error: %s", err.Error())
+						errCnt++
+					}
+					numActiveKeysign--
+				}()
+			}
+
+			lastBlockNum = bn
+			log.Info().Msgf("#### numActiveKeysign = %d, errCnt = %d", numActiveKeysign, errCnt)
+			if numActiveKeysign > 200 {
+				log.Info().Msgf("#### numActiveKeysign = %d, errCnt = %d", numActiveKeysign, errCnt)
+				return nil
+			}
+		}
+
+		// wait....
+		log.Info().Msgf("awaiting the os.Interrupt, syscall.SIGTERM signals...")
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+		sig := <-ch
+		log.Info().Msgf("stop signal received: %s", sig)
 	}
 
 	consKey := ""

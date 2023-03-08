@@ -58,7 +58,10 @@ func main() {
 	server.maticPair = maticPair
 
 	http.HandleFunc("/", server.reserveHandler)
-	http.HandleFunc("/events", server.eventsHandler)
+	http.HandleFunc("/ethpool", server.ethEventsHandler)
+	http.HandleFunc("/bnbpool", server.bnbEventsHandler)
+	http.HandleFunc("/maticpool", server.maticEventsHandler)
+
 	http.ListenAndServe(":8088", nil)
 
 	bnbToken0, err := bnbPair.Token0(&bind.CallOpts{})
@@ -122,8 +125,14 @@ func main() {
 }
 
 func (s *Server) reserveHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "zEVM system pool reserves\n\n")
+	w.Header().Set("Content-Type", "text/html")
 
+	fmt.Fprintf(w, "<!doctype html><html><body> ")
+	fmt.Fprintf(w, "<div><a href=\"/ethpool\">ETH swap events</a> | <a href=\"/bnbpool\">BNB swap events</a> | <a href=\"/maticpool\">MATIC swap events</a></div>")
+
+	fmt.Fprintf(w, "<h2>zEVM system pool reserves</h2>")
+
+	fmt.Fprintf(w, "<pre>")
 	fmt.Fprintf(w, "gETH ZRC20: %v\n", gETHZRC20.Hex())
 	fmt.Fprintf(w, "tBNB ZRC20: %v\n", tBNBZRC20.Hex())
 	fmt.Fprintf(w, "tMATIC ZRC20: %v\n", tMATICZRC20.Hex())
@@ -163,17 +172,31 @@ func (s *Server) reserveHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "  Reserve0: %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(res.Reserve0), big.NewFloat(1e18)))
 	fmt.Fprintf(w, "  Reserve1(*): %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(res.Reserve1), big.NewFloat(1e18)))
 	fmt.Fprintf(w, "  BlockTimestampLast: %v\n", time.Unix(int64(res.BlockTimestampLast), 0))
+
+	fmt.Fprintf(w, "</pre>")
 }
 
-func (s *Server) eventsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) bnbEventsHandler(w http.ResponseWriter, r *http.Request) {
+	s.getEventsByPair(w, s.bnbPair)
+}
+
+func (s *Server) ethEventsHandler(w http.ResponseWriter, r *http.Request) {
+	s.getEventsByPair(w, s.ethPair)
+}
+
+func (s *Server) maticEventsHandler(w http.ResponseWriter, r *http.Request) {
+	s.getEventsByPair(w, s.maticPair)
+}
+
+func (s *Server) getEventsByPair(w http.ResponseWriter, pair *zevm.UniswapV2Pair) {
 	bn, err := s.zevmClient.BlockNumber(context.Background())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "error: %v", err)
 		return
 	}
-	iter, err := s.ethPair.FilterSwap(&bind.FilterOpts{
-		Start:   bn - 1000,
+	iter, err := pair.FilterSwap(&bind.FilterOpts{
+		Start:   bn - 300,
 		End:     nil,
 		Context: context.Background(),
 	}, nil, nil)
@@ -182,26 +205,58 @@ func (s *Server) eventsHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "error: %v", err)
 		return
 	}
-	fmt.Fprintf(w, "gETH/ZETA swap event (first 100 events of last 1000 blocks)\n")
+	token0, err := pair.Token0(&bind.CallOpts{})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "error: %v", err)
+		return
+	}
+	token1, err := pair.Token1(&bind.CallOpts{})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "error: %v", err)
+		return
+	}
+	var logs []*zevm.UniswapV2PairSwap
+	for iter.Next() {
+		logs = append(logs, iter.Event)
+	}
+
+	fmt.Fprintf(w, "gETH/ZETA swap event (latest 100 events of last 1000 blocks)\n")
 	cnt := 0
-	for iter.Next() && cnt < 100 {
-		log := iter.Event
+	for i := len(logs) - 1; i >= 0 && cnt <= 100; i-- {
+		fmt.Fprintf(w, "%3d ", cnt)
+		log := logs[i]
 		if log.Amount0In.Cmp(big.NewInt(0)) > 0 {
-			fmt.Fprintf(w, "  amount0In: %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(log.Amount0In), big.NewFloat(1e18)))
+			fmt.Fprintf(w, " %5s: %9f => ", addrToTokenName(token0), big.NewFloat(0).Quo(big.NewFloat(0).SetInt(log.Amount0In), big.NewFloat(1e18)))
 		}
 		if log.Amount1In.Cmp(big.NewInt(0)) > 0 {
-			fmt.Fprintf(w, "  amount1In: %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(log.Amount1In), big.NewFloat(1e18)))
+			fmt.Fprintf(w, " %5s: %9f => ", addrToTokenName(token1), big.NewFloat(0).Quo(big.NewFloat(0).SetInt(log.Amount1In), big.NewFloat(1e18)))
 		}
 		if log.Amount0Out.Cmp(big.NewInt(0)) > 0 {
-			fmt.Fprintf(w, "  amount0Out: %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(log.Amount0Out), big.NewFloat(1e18)))
+			fmt.Fprintf(w, " %5s: %9f", addrToTokenName(token0), big.NewFloat(0).Quo(big.NewFloat(0).SetInt(log.Amount0Out), big.NewFloat(1e18)))
 		}
 		if log.Amount1Out.Cmp(big.NewInt(0)) > 0 {
-			fmt.Fprintf(w, "  amount1Out: %v\n", big.NewFloat(0).Quo(big.NewFloat(0).SetInt(log.Amount1Out), big.NewFloat(1e18)))
+			fmt.Fprintf(w, " %5s: %9f", addrToTokenName(token1), big.NewFloat(0).Quo(big.NewFloat(0).SetInt(log.Amount1Out), big.NewFloat(1e18)))
 		}
-		fmt.Fprintf(w, "  to: %v\n", log.To)
+		fmt.Fprintf(w, "  \tto: %v\t", log.To)
 		fmt.Fprintf(w, "  block: %v\n", log.Raw.BlockNumber)
-		fmt.Fprintf(w, "  tx: %v\n", log.Raw.TxHash)
-		fmt.Fprintf(w, "\n")
+		//fmt.Fprintf(w, "  tx: %v\n", log.Raw.TxHash)
+		//fmt.Fprintf(w, "\n")
 		cnt++
 	}
+}
+
+func addrToTokenName(addr ethcommon.Address) string {
+	switch addr {
+	case tBNBZRC20:
+		return "tBNB"
+	case tMATICZRC20:
+		return "tMATIC"
+	case gETHZRC20:
+		return "gETH"
+	case WZETAAddress:
+		return "WZETA"
+	}
+	return "unknown"
 }

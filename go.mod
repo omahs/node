@@ -21,7 +21,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/tendermint/tendermint v0.34.24
 	github.com/tendermint/tm-db v0.6.7
-	gitlab.com/thorchain/tss/go-tss v1.5.7
+	gitlab.com/thorchain/tss/go-tss v1.5.8-0.20230217025014-0aed9bcc4aa7
 	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37
 	google.golang.org/grpc v1.52.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
@@ -292,3 +292,5 @@ replace github.com/binance-chain/tss-lib => gitlab.com/thorchain/tss/tss-lib v0.
 replace github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
 
 replace github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
+
+replace gitlab.com/thorchain/tss/go-tss => github.com/brewmaster012/go-tss v0.0.0-20230316192724-c57eb68d3651

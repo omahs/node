@@ -2,7 +2,6 @@ package zetaclient
 
 import (
 	"context"
-	"fmt"
 	//"github.com/Meta-Protocol/zetacore/common"
 	"github.com/zeta-chain/zetacore/x/crosschain/types"
 )
@@ -19,7 +18,7 @@ func (b *ZetaCoreBridge) GetBlockHeight() (uint64, error) {
 		return 0, err
 	}
 
-	fmt.Printf("block height: %d\n", height.Height)
+	//fmt.Printf("block height: %d\n", height.Height)
 	return height.Height, nil
 }
 

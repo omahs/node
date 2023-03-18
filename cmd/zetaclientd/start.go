@@ -17,9 +17,12 @@ import (
 	"gitlab.com/thorchain/tss/go-tss/p2p"
 	"google.golang.org/grpc"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
@@ -94,8 +97,27 @@ func start(_ *cobra.Command, _ []string) error {
 	if startArgs.debugTSS {
 		log.Info().Msgf("Debug TSS mode")
 		var lastBlockNum uint64 = 0
-		errCnt := 0
-		numActiveKeysign := 0
+		errCnt := int64(0)
+		successCnt := int64(0)
+		numActiveKeysign := int64(0)
+		startTime := make(map[string]time.Time)
+		mu := sync.Mutex{}
+		//lastSuccess := time.Now()
+		//disableUntilBlock := uint64(0)
+		errCombo := int64(0)
+
+		failRate := 10
+		repeat := 3
+		stopUntilBlock := 0
+		hn, err := os.Hostname()
+		if err != nil {
+			panic(err)
+		}
+		if hn == "zetaclient1" {
+			fmt.Printf("skipping until block 20")
+			stopUntilBlock = 20
+		}
+
 		for {
 			time.Sleep(1 * time.Second)
 			bn, err := bridge1.GetBlockHeight()
@@ -105,28 +127,50 @@ func start(_ *cobra.Command, _ []string) error {
 			if bn <= lastBlockNum {
 				continue
 			}
+			if bn < uint64(stopUntilBlock) {
+				continue
+			}
 
-			repeat := 1
 			for i := 0; i < repeat; i++ {
 				log.Info().Msgf("bn.i = %d.%d", bn, i)
-				go func() {
+				go func(i int, bn uint64) {
+					r := rand.New(rand.NewSource(time.Now().UnixNano()))
 					message := fmt.Sprintf("bn.i = %d.%d", bn, i)
 					hash := crypto.Keccak256([]byte(message))
-					numActiveKeysign++
-					_, err := tss.Sign(hash)
-					if err != nil {
-						log.Error().Err(err).Msgf("tss.Sign error: %s", err.Error())
-						errCnt++
+					atomic.AddInt64(&numActiveKeysign, 1)
+					mu.Lock()
+					startTime[message] = time.Now()
+					mu.Unlock()
+					if r.Intn(100) >= failRate && atomic.LoadInt64(&numActiveKeysign) < 10 {
+						_, err := tss.Sign(hash)
+						if err != nil {
+							log.Error().Err(err).Msgf("tss.Sign error: %s", err.Error())
+							atomic.AddInt64(&errCnt, 1)
+							atomic.AddInt64(&errCombo, 1)
+						} else {
+							fmt.Printf("SUCCESS: %s\n", message)
+							atomic.AddInt64(&successCnt, 1)
+							atomic.StoreInt64(&errCombo, 0)
+						}
 					}
-					numActiveKeysign--
-				}()
+
+					atomic.AddInt64(&numActiveKeysign, -1)
+					mu.Lock()
+					delete(startTime, message)
+					mu.Unlock()
+				}(i, bn)
 			}
 
 			lastBlockNum = bn
-			log.Info().Msgf("#### numActiveKeysign = %d, errCnt = %d", numActiveKeysign, errCnt)
-			if numActiveKeysign > 200 {
-				log.Info().Msgf("#### numActiveKeysign = %d, errCnt = %d", numActiveKeysign, errCnt)
-				return nil
+			fmt.Printf("numActiveKeysign = %d, errCnt = %d, successCnt = %d\n", atomic.LoadInt64(&numActiveKeysign), atomic.LoadInt64(&errCnt), atomic.LoadInt64(&successCnt))
+
+			if atomic.LoadInt64(&errCombo) > 50 {
+				fmt.Printf("errCombo = %d, adjust to fail free\n", errCombo)
+				panic("errCombo > 20")
+				failRate = 0
+				repeat = 1
+				atomic.StoreInt64(&errCombo, 0)
+				stopUntilBlock = int(bn) + 10
 			}
 		}
 

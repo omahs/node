@@ -80,11 +80,6 @@ jobs:
           BRANCH_OR_TAG_NAME: ${{ github.ref_name }}
 
     ## Cosmovisor Actions Start Here
-      - name: Block Dangerous Updates To Public Networks
-        if: ${{ github.event.inputs.DEPLOYMENT_METHOD == 'binary_replacement' && github.event.inputs.ENVIRONMENT  != 'development' }}
-        run: |
-          echo  "ERROR: CANNOT USE DANGEROUS DEPLOYMENT METHODS FOR ATHENS AND OTHER PUBLIC NETWORKS"
-          exit 1
 
       - name: Check Upgrade Handler Name Matches Tag
         if:  ${{ github.event.inputs.DEPLOYMENT_METHOD == 'cosmovisor' }}

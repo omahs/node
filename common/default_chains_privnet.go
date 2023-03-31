@@ -10,7 +10,7 @@ func GoerliLocalNetChain() Chain {
 	}
 }
 
-func ZetaChain() Chain {
+func ZetaChainPrivateNet() Chain {
 	return Chain{
 		ChainName: ChainName_zeta_mainnet,
 		ChainId:   101,
@@ -28,7 +28,7 @@ func DefaultChainsList() []*Chain {
 	chains := []Chain{
 		BtcRegtestChain(),
 		GoerliLocalNetChain(),
-		ZetaChain(),
+		ZetaChainPrivateNet(),
 	}
 	var c []*Chain
 	for i := 0; i < len(chains); i++ {

@@ -1,4 +1,4 @@
-//go:build TESTNET
+//go:build PRIVNET
 
 package keeper
 

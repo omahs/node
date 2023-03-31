@@ -19,7 +19,7 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=zetacore \
 	-X github.com/zeta-chain/zetacore/common.BuildTime=$(BUILDTIME) \
 	-X github.com/cosmos/cosmos-sdk/types.DBBackend=pebbledb
 
-BUILD_FLAGS := -ldflags '$(ldflags)' -tags PRIVNET,pebbledb 
+BUILD_FLAGS := -ldflags '$(ldflags)' -tags TESTNET,pebbledb
 TEST_DIR?="./..."
 TEST_BUILD_FLAGS := -tags PRIVNET,pebbledb 
 

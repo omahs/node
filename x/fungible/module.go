@@ -172,12 +172,12 @@ func (AppModule) ConsensusVersion() uint64 { return 2 }
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 	//TODO : moved to init-genesis
-	if ctx.BlockHeight() == 1 {
-		err := am.keeper.BlockOneDeploySystemContracts(sdk.WrapSDKContext(ctx))
-		if err != nil {
-			ctx.Logger().Error("Unable To deploy contracts", "err", err.Error())
-		}
-	}
+	//if ctx.BlockHeight() == 1 {
+	//	err := am.keeper.BlockOneDeploySystemContracts(sdk.WrapSDKContext(ctx))
+	//	if err != nil {
+	//		ctx.Logger().Error("Unable To deploy contracts", "err", err.Error())
+	//	}
+	//}
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It

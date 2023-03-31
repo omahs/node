@@ -46,7 +46,7 @@ const (
 )
 
 var (
-	BitconNetParams = &chaincfg.Testnet3Params
+	BitconNetParams = &chaincfg.Params{}
 )
 
 var ChainsEnabled = []common.Chain{}

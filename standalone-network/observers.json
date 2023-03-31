@@ -1,36 +1,78 @@
 [
  {
   "SupportedChainsList": [
-   1337,
-   18444,
-   101
+   5,
+   97,
+   7001,
+   18332,
+   80001
   ],
-  "ObserverAddress": "zeta1z46tdw75jvh4h39y3vu758ctv34rw5z9kmyhgz",
-  "ZetaClientGranteeAddress": "zeta1syavy2npfyt9tcncdtsdzf7kny9lh777heefxk",
-  "StakingGranteeAddress": "zeta1syavy2npfyt9tcncdtsdzf7kny9lh777heefxk",
-  "StakingMaxTokens": "100000000",
+  "ObserverAddress": "zeta1670kf63ny6pltexn5xkkwpk9vqqf6jkvq0ap77",
+  "ZetaClientGranteeAddress": "zeta1t8yz48j8hwuzy2h5tv47y864dklwackdlynnm9",
+  "StakingGranteeAddress": "zeta1t8yz48j8hwuzy2h5tv47y864dklwackdlynnm9",
+  "StakingMaxTokens": "100000000000000000000000",
   "StakingValidatorAllowList": [
-   "zetavaloper1syavy2npfyt9tcncdtsdzf7kny9lh777nep4tq"
+   "zetavaloper1670kf63ny6pltexn5xkkwpk9vqqf6jkvy09ang"
   ],
-  "SpendGranteeAddress": "zeta1syavy2npfyt9tcncdtsdzf7kny9lh777heefxk",
-  "SpendMaxTokens": "100000000",
-  "GovGranteeAddress" : "zeta1syavy2npfyt9tcncdtsdzf7kny9lh777heefxk"
+  "SpendGranteeAddress": "zeta1t8yz48j8hwuzy2h5tv47y864dklwackdlynnm9",
+  "SpendMaxTokens": "100000000000000000000000",
+  "GovGranteeAddress" : "zeta1t8yz48j8hwuzy2h5tv47y864dklwackdlynnm9"
  },
  {
   "SupportedChainsList": [
-   1337,
-   18444,
-   101
+   5,
+   97,
+   7001,
+   18332,
+   80001
   ],
-  "ObserverAddress": "zeta1lz2fqwzjnk6qy48fgj753h48444fxtt7hekp52",
-  "ZetaClientGranteeAddress": "zeta1l7hypmqk2yc334vc6vmdwzp5sdefygj2w5yj50",
-  "StakingGranteeAddress": "zeta1l7hypmqk2yc334vc6vmdwzp5sdefygj2w5yj50",
-  "StakingMaxTokens": "100000000",
+  "ObserverAddress": "zeta1j0ym9n69z0ryj8lqk80yqnlgd0yddavc8msw5z",
+  "ZetaClientGranteeAddress": "zeta1cxpdxql9m535d9rce00408gz2t8ghuqp4s5te4",
+  "StakingGranteeAddress": "zeta1cxpdxql9m535d9rce00408gz2t8ghuqp4s5te4",
+  "StakingMaxTokens": "100000000000000000000000",
   "StakingValidatorAllowList": [
-   "zetavaloper1syavy2npfyt9tcncdtsdzf7kny9lh777nep4tq"
+   "zetavaloper1j0ym9n69z0ryj8lqk80yqnlgd0yddavcrmgje5"
   ],
-  "SpendGranteeAddress": "zeta1l7hypmqk2yc334vc6vmdwzp5sdefygj2w5yj50",
-  "SpendMaxTokens": "100000000",
-  "GovGranteeAddress" : "zeta1l7hypmqk2yc334vc6vmdwzp5sdefygj2w5yj50"
+  "SpendGranteeAddress": "zeta1cxpdxql9m535d9rce00408gz2t8ghuqp4s5te4",
+  "SpendMaxTokens": "100000000000000000000000",
+  "GovGranteeAddress" : "zeta1cxpdxql9m535d9rce00408gz2t8ghuqp4s5te4"
+ },
+ {
+  "SupportedChainsList": [
+   5,
+   97,
+   7001,
+   18332,
+   80001
+  ],
+  "ObserverAddress": "zeta1fsynpkrc2x8hyntqpfn0y9ad5nvy77aq8qppsf",
+  "ZetaClientGranteeAddress": "zeta1mh055v8e5c6lq9vc8r6c04pvw4cj0csj7qqhxd",
+  "StakingGranteeAddress": "zeta1mh055v8e5c6lq9vc8r6c04pvw4cj0csj7qqhxd",
+  "StakingMaxTokens": "100000000000000000000000",
+  "StakingValidatorAllowList": [
+   "zetavaloper1fsynpkrc2x8hyntqpfn0y9ad5nvy77aqrqeaal"
+  ],
+  "SpendGranteeAddress": "zeta1mh055v8e5c6lq9vc8r6c04pvw4cj0csj7qqhxd",
+  "SpendMaxTokens": "100000000000000000000000",
+  "GovGranteeAddress" : "zeta1mh055v8e5c6lq9vc8r6c04pvw4cj0csj7qqhxd"
+ },
+ {
+  "SupportedChainsList": [
+   5,
+   97,
+   7001,
+   18332,
+   80001
+  ],
+  "ObserverAddress": "zeta13r8vn6kk8hfff0zu7hhkdgyysxf5txletu5ax9",
+  "ZetaClientGranteeAddress": "zeta1yml3ctpspn98pz2a2sxpsdmwfnxz484gx9jcyw",
+  "StakingGranteeAddress": "zeta1yml3ctpspn98pz2a2sxpsdmwfnxz484gx9jcyw",
+  "StakingMaxTokens": "100000000000000000000000",
+  "StakingValidatorAllowList": [
+   "zetavaloper13r8vn6kk8hfff0zu7hhkdgyysxf5txle0uvptn"
+  ],
+  "SpendGranteeAddress": "zeta1yml3ctpspn98pz2a2sxpsdmwfnxz484gx9jcyw",
+  "SpendMaxTokens": "100000000000000000000000",
+  "GovGranteeAddress" : "zeta1yml3ctpspn98pz2a2sxpsdmwfnxz484gx9jcyw"
  }
 ]

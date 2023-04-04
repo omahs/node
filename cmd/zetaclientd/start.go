@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	maddr "github.com/multiformats/go-multiaddr"
@@ -65,22 +66,40 @@ func start(_ *cobra.Command, _ []string) error {
 
 	startLogger.Debug().Msgf("CreateAuthzSigner is ready")
 
-	bridgePk, err := bridge1.GetKeys().GetPrivateKey(common.TssSignerKey)
+	tssSignerIdPrivKey, err := bridge1.GetKeys().GetPrivateKey(common.TssSignerKey)
 	if err != nil {
 		startLogger.Error().Err(err).Msg("GetKeys GetPrivateKey error:")
 	}
 
-	startLogger.Debug().Msgf("bridgePk %s", bridgePk.String())
-	if len(bridgePk.Bytes()) != 32 {
-		errMsg := fmt.Sprintf("key bytes len %d != 32", len(bridgePk.Bytes()))
+	//startLogger.Debug().Msgf("tssSignerIdPrivKey %s", tssSignerIdPrivKey.String())
+	if len(tssSignerIdPrivKey.Bytes()) != 32 {
+		errMsg := fmt.Sprintf("key bytes len %d != 32", len(tssSignerIdPrivKey.Bytes()))
 		log.Error().Msgf(errMsg)
 		return errors.New(errMsg)
 	}
+
+	startLogger.Info().Msgf("Determining whether I am in the TSS Signer set...")
+	tssSignerSet, err := bridge1.GetAllNodeAccounts()
+	if err != nil {
+		startLogger.Error().Err(err).Msg("GetAllNodeAccounts error")
+		return err
+	}
+	found := false
+	for _, tssSigner := range tssSignerSet {
+		if bytes.Equal(tssSignerIdPrivKey.PubKey().Bytes(), tssSigner.NodeAddress) {
+			found = true
+			startLogger.Info().Msgf("This node is a TSS Signer")
+		}
+	}
+	if !found {
+		startLogger.Info().Msgf("This node is NOT a TSS Signer; exiting...")
+		return errors.New("not a tss signer")
+	}
+
+	startLogger.Debug().Msgf("NewTSS: with peer pubkey %s", tssSignerIdPrivKey.PubKey())
+
 	var priKey secp256k1.PrivKey
-	priKey = bridgePk.Bytes()[:32]
-
-	startLogger.Debug().Msgf("NewTSS: with peer pubkey %s", bridgePk.PubKey())
-
+	priKey = tssSignerIdPrivKey.Bytes()[:32]
 	peers, err := initPeers(configData.Peer)
 	if err != nil {
 		log.Error().Err(err).Msg("peer address error")
@@ -91,11 +110,11 @@ func start(_ *cobra.Command, _ []string) error {
 		startLogger.Error().Err(err).Msg("NewTSS error")
 		return err
 	}
-	//err = tss.Validate()
-	//if err != nil {
-	//	log.Error().Err(err).Msg("tss.Validate error")
-	//	return err
-	//}
+	err = tss.Validate()
+	if err != nil {
+		log.Error().Err(err).Msg("tss.Validate error")
+		return err
+	}
 
 	//log.Debug().Msgf("NewTSS success : %s", tss.EVMAddress())
 	consKey := ""

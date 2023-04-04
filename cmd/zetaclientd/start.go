@@ -268,8 +268,10 @@ func genNewKeysAtBlock(height int64, bridge *mc.ZetaCoreBridge, tss *mc.TSS) {
 			return
 		}
 		pubkeys := make([]string, 0)
+		ids := make([]string, 0)
 		for _, na := range nodeAccounts {
 			pubkeys = append(pubkeys, na.PubkeySet.Secp256k1.String())
+			ids = append(ids, na.NodeAddress.String())
 		}
 		ticker := time.NewTicker(time.Second * 2)
 		for range ticker.C {
@@ -284,6 +286,7 @@ func genNewKeysAtBlock(height int64, bridge *mc.ZetaCoreBridge, tss *mc.TSS) {
 		}
 		log.Info().Msgf("Keygen with %d TSS signers", len(nodeAccounts))
 		log.Info().Msgf("%s", pubkeys)
+		log.Info().Msgf("%s", ids)
 		var req keygen.Request
 		req = keygen.NewRequest(pubkeys, height, "0.14.0")
 		res, err := tss.Server.Keygen(req)

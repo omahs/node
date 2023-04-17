@@ -28,6 +28,7 @@ and the third line is the ethereum address.
 				fmt.Printf("%s\n", ethcommon.BytesToAddress(addr.Bytes()).String())
 				return nil
 			}
+			sdk.GetConsAddress()
 			valAddr, err := sdk.ValAddressFromBech32(args[0])
 			if err == nil {
 				addr := sdk.AccAddress(valAddr.Bytes())

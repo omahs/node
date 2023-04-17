@@ -21,16 +21,20 @@ and the third line is the ethereum address.
 			addr, err := sdk.AccAddressFromBech32(args[0])
 			if err == nil {
 				valAddr := sdk.ValAddress(addr.Bytes())
+				consAddress := sdk.ConsAddress(addr.Bytes())
 				fmt.Printf("%s\n", addr.String())
 				fmt.Printf("%s\n", valAddr.String())
+				fmt.Printf("%s\n", consAddress.String())
 				fmt.Printf("%s\n", ethcommon.BytesToAddress(addr.Bytes()).String())
 				return nil
 			}
 			valAddr, err := sdk.ValAddressFromBech32(args[0])
 			if err == nil {
 				addr := sdk.AccAddress(valAddr.Bytes())
+				consAddress := sdk.ConsAddress(valAddr.Bytes())
 				fmt.Printf("%s\n", addr.String())
 				fmt.Printf("%s\n", valAddr.String())
+				fmt.Printf("%s\n", consAddress.String())
 				fmt.Printf("%s\n", ethcommon.BytesToAddress(addr.Bytes()).String())
 				return nil
 			}
@@ -38,9 +42,11 @@ and the third line is the ethereum address.
 			if ethAddr != (ethcommon.Address{}) {
 				addr := sdk.AccAddress(ethAddr.Bytes())
 				valAddr := sdk.ValAddress(addr.Bytes())
+				consAddress := sdk.ConsAddress(addr.Bytes())
 				fmt.Printf("%s\n", addr.String())
 				fmt.Printf("%s\n", valAddr.String())
 				fmt.Printf("%s\n", ethAddr.String())
+				fmt.Printf("%s\n", consAddress.String())
 				return nil
 			}
 			return fmt.Errorf("invalid address: %s", args[0])

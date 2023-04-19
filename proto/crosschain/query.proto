@@ -67,6 +67,11 @@ service Query {
 	rpc PermissionFlags(QueryGetPermissionFlagsRequest) returns (QueryGetPermissionFlagsResponse) {
 		option (google.api.http).get = "/zeta-chain/zetacore/crosschain/permission_flags";
 	}
+// Queries a list of GetValidatorConsAddress items.
+	rpc GetValidatorConsAddress(QueryGetValidatorConsAddressRequest) returns (QueryGetValidatorConsAddressResponse) {
+		option (google.api.http).get = "/zeta-chain/zetacore/crosschain/get_validator_cons_address/{validatorOperatorAddress}";
+	}
+
 // this line is used by starport scaffolding # 2
 
 	// Queries a keygen by index.
@@ -227,6 +232,14 @@ message QueryGetPermissionFlagsRequest {}
 message QueryGetPermissionFlagsResponse {
 	PermissionFlags PermissionFlags = 1 [(gogoproto.nullable) = false];
 }
+message QueryGetValidatorConsAddressRequest {
+  string validatorOperatorAddress = 1;
+}
+
+message QueryGetValidatorConsAddressResponse {
+	string validatorConsAddress = 1;
+}
+
 // this line is used by starport scaffolding # 3
 message QueryGetKeygenRequest {}
 

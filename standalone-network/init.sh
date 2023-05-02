@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-CHAINID="localnet_101-1"
+CHAINID="athens_7001-1"
 KEYRING="test"
 export DAEMON_HOME=$HOME/.zetacored
 export DAEMON_NAME=zetacored
@@ -30,7 +30,7 @@ sed -i '/\[api\]/,+3 s/enable = false/enable = true/' ~/.zetacored/config/app.to
 
 
 zetacored add-observer-list standalone-network/observers.json
-zetacored gentx zeta 1000000000000000000000azeta --chain-id=$CHAINID --keyring-backend=$KEYRING
+zetacored gentx zeta 1000000000000000000azeta --chain-id=$CHAINID --keyring-backend=$KEYRING
 
 
 

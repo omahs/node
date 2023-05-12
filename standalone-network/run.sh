@@ -26,11 +26,17 @@ zetacored start --trace \
 #--state-sync.snapshot-interval 14400 \
 #--state-sync.snapshot-keep-recent 3
 
-echo "--> Submitting proposal to update admin policies "
+#echo "--> Submitting proposal to update admin policies "
+#sleep 7
+#zetacored tx gov submit-legacy-proposal param-change standalone-network/proposal.json --from $signer --gas=auto --gas-adjustment=1.5 --gas-prices=0.001azeta --chain-id=$CHAINID --keyring-backend=$KEYRING -y --broadcast-mode=block
+#echo "--> Submitting vote for proposal"
+#sleep 7
+#zetacored tx gov vote 1 yes --from $signer --keyring-backend $KEYRING --chain-id $CHAINID --yes --fees=40azeta --broadcast-mode=block
+#tail -f ~/.zetacored/zetacored.log
+
+echo "--> Creating group with policy"
 sleep 7
-zetacored tx gov submit-legacy-proposal param-change standalone-network/proposal.json --from $signer --gas=auto --gas-adjustment=1.5 --gas-prices=0.001azeta --chain-id=$CHAINID --keyring-backend=$KEYRING -y --broadcast-mode=block
-echo "--> Submitting vote for proposal"
-sleep 7
-zetacored tx gov vote 1 yes --from $signer --keyring-backend $KEYRING --chain-id $CHAINID --yes --fees=40azeta --broadcast-mode=block
+zetacored tx  group create-group-with-policy zeta19wzjdtah4kl2vh77jks68cyy5gpjyurqltys99 group-metadata group-policy-metadata standalone-network/group/members.json standalone-network/group/policy.json --from zeta --fees=40azeta --chain-id=localnet_101-1 --keyring-backend=test -y --broadcast-mode=block
 tail -f ~/.zetacored/zetacored.log
 
+#zetacored tx  group create-group-with-policy zeta1afk9zr2hn2jsac63h4hm60vl9z3e5u69gndzf7c99cqge3vzwjzsxn0x73 group-metadata group-policy-metadata standalone-network/group/members.json standalone-network/group/policy.json --from zeta --fees=40azeta --chain-id=localnet_101-1 --keyring-backend=test -y --broadcast-mode=block --generate-only > create-group.json

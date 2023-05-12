@@ -1,0 +1,34 @@
+{
+  "group_policy_address": "zeta1afk9zr2hn2jsac63h4hm60vl9z3e5u69gndzf7c99cqge3vzwjzsxn0x73",
+  "messages": [
+    {
+      "@type": "/cosmos.group.v1.MsgCreateGroupWithPolicy",
+      "admin": "zeta1afk9zr2hn2jsac63h4hm60vl9z3e5u69gndzf7c99cqge3vzwjzsxn0x73",
+      "members": [
+        {
+          "address": "zeta1syavy2npfyt9tcncdtsdzf7kny9lh777heefxk",
+          "weight": "1",
+          "metadata": "zetadmin"
+        },
+        {
+          "address": "zeta1l7hypmqk2yc334vc6vmdwzp5sdefygj2w5yj50",
+          "weight": "1",
+          "metadata": "marioadmin"
+        }
+      ],
+      "group_metadata": "group-metadata",
+      "group_policy_metadata": "group-policy-metadata",
+      "group_policy_as_admin": false,
+      "decision_policy": {
+        "@type": "/cosmos.group.v1.ThresholdDecisionPolicy",
+        "threshold": "1",
+        "windows": {
+          "voting_period": "20000s",
+          "min_execution_period": "0s"
+        }
+      }
+    }
+  ],
+  "metadata": "",
+  "proposers": ["zeta1syavy2npfyt9tcncdtsdzf7kny9lh777heefxk"]
+}

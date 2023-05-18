@@ -52,11 +52,16 @@ func SetupConfigForTest() {
 
 func InitLogger(cfg *config.Config) zerolog.Logger {
 	var logger zerolog.Logger
+	runLogFile, _ := os.OpenFile(
+		"zetaclientd.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY,
+		0664,
+	)
 	switch cfg.LogFormat {
 	case "json":
-		logger = zerolog.New(os.Stdout).Level(cfg.LogLevel).With().Timestamp().Logger()
+		logger = zerolog.New(runLogFile).Level(cfg.LogLevel).With().Timestamp().Logger()
 	case "text":
-		logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}).Level(cfg.LogLevel).With().Timestamp().Logger()
+		logger = zerolog.New(zerolog.ConsoleWriter{Out: runLogFile, TimeFormat: time.RFC3339}).Level(cfg.LogLevel).With().Timestamp().Logger()
 	default:
 		logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
 	}

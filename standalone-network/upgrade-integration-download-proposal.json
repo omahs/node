@@ -1,0 +1,17 @@
+{
+  "messages": [
+    {
+      "@type": "/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade",
+      "authority": "zeta10d07y265gmmuvt4z0w9aw880jnsr700jvxasvr",
+      "plan": {
+        "name": "test-upgrade",
+        "time": "0001-01-01T00:00:00Z",
+        "height": "6",
+        "info": "{\"binaries\":{\"zetaclientd-darwin/arm64\":\"https://athens3-testnet.s3.amazonaws.com/binaries/zetaclientd-mac?checksum=sha256:9a10a058f33bb55ce6af420716bf6df37f43596dfe7ccdc86f90d2a89efdc027\",\"zetacored-darwin/arm64\":\"https://athens3-testnet.s3.amazonaws.com/binaries/zetacored-mac?checksum=sha256:b014b086c0de4ddce46087a8f24940e68cf115b3406f3a9792464a41247fb59e\"}}",
+        "upgraded_client_state": null
+      }
+    }
+  ],
+  "metadata": "ipfs://CID",
+  "deposit": "10000000azeta"
+}

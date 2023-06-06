@@ -546,13 +546,14 @@ func (ob *EVMChainClient) observeInTX() error {
 	// "confirmed" current block number
 	confirmedBlockNum := header.Number.Uint64() - ob.GetChainConfig().CoreParams.ConfCount
 	// skip if no new block is produced.
+	chain := ob.Chain()
 	sampledLogger := ob.logger.ExternalChainWatcher.Sample(&zerolog.BasicSampler{N: 10})
 	if confirmedBlockNum < 0 || confirmedBlockNum > math2.MaxUint64 {
-		sampledLogger.Error().Msg("Skipping observer , confirmedBlockNum is negative or too large ")
+		sampledLogger.Error().Msgf("Skipping observer , confirmedBlockNum is negative or too large | Chain %s", chain.String())
 		return nil
 	}
 	if confirmedBlockNum <= uint64(ob.GetLastBlockHeight()) {
-		sampledLogger.Info().Msg("Skipping observer , No new block is produced ")
+		sampledLogger.Info().Msgf("Skipping observer , No new block is produced | Chain %s", chain.String())
 		return nil
 	}
 	lastBlock := ob.GetLastBlockHeight()
@@ -562,7 +563,7 @@ func (ob *EVMChainClient) observeInTX() error {
 		toBlock = int64(confirmedBlockNum)
 	}
 	if startBlock < 0 || startBlock >= math2.MaxInt64 {
-		return fmt.Errorf("startBlock is negative or too large")
+		return fmt.Errorf("startBlock is negative or too large| Chain %s", chain.String())
 	}
 	if toBlock < 0 || toBlock >= math2.MaxInt64 {
 		return fmt.Errorf("toBlock is negative or too large")
@@ -573,12 +574,12 @@ func (ob *EVMChainClient) observeInTX() error {
 		tb := uint64(toBlock)
 		connector, err := ob.GetConnectorContract()
 		if err != nil {
-			ob.logger.ChainLogger.Warn().Err(err).Msgf("observeInTx: GetConnectorContract error:")
+			ob.logger.ChainLogger.Warn().Err(err).Msgf("observeInTx: GetConnectorContract error:| Chain %s", chain.String())
 			return
 		}
 		cnt, err := ob.GetPromCounter("rpc_getLogs_count")
 		if err != nil {
-			ob.logger.ExternalChainWatcher.Error().Err(err).Msg("GetPromCounter:")
+			ob.logger.ExternalChainWatcher.Error().Err(err).Msgf("GetPromCounter:| Chain %s", chain.String())
 		} else {
 			cnt.Inc()
 		}
@@ -588,7 +589,7 @@ func (ob *EVMChainClient) observeInTX() error {
 			Context: context.TODO(),
 		}, []ethcommon.Address{}, []*big.Int{})
 		if err != nil {
-			ob.logger.ChainLogger.Warn().Err(err).Msgf("observeInTx: FilterZetaSent error:")
+			ob.logger.ChainLogger.Warn().Err(err).Msgf("observeInTx: FilterZetaSent error:| Chain %s", chain.String())
 			return
 		}
 		// Pull out arguments from logs
@@ -630,7 +631,7 @@ func (ob *EVMChainClient) observeInTX() error {
 		toB := uint64(toBlock)
 		erc20custody, err := ob.GetERC20CustodyContract()
 		if err != nil {
-			ob.logger.ExternalChainWatcher.Warn().Err(err).Msgf("observeInTx: GetERC20CustodyContract error:")
+			ob.logger.ExternalChainWatcher.Warn().Err(err).Msgf("observeInTx: GetERC20CustodyContract error:| Chain %s", chain.String())
 			return
 		}
 		depositedLogs, err := erc20custody.FilterDeposited(&bind.FilterOpts{
@@ -640,12 +641,12 @@ func (ob *EVMChainClient) observeInTX() error {
 		}, []ethcommon.Address{})
 
 		if err != nil {
-			ob.logger.ExternalChainWatcher.Warn().Err(err).Msgf("observeInTx: FilterDeposited error:")
+			ob.logger.ExternalChainWatcher.Warn().Err(err).Msgf("observeInTx: FilterDeposited error:| Chain %s", chain.String())
 			return
 		}
 		cnt, err := ob.GetPromCounter("rpc_getLogs_count")
 		if err != nil {
-			ob.logger.ExternalChainWatcher.Error().Err(err).Msg("GetPromCounter:")
+			ob.logger.ExternalChainWatcher.Error().Err(err).Msgf("GetPromCounter:| Chain %s", chain.String())
 		} else {
 			cnt.Inc()
 		}
@@ -773,6 +774,7 @@ func (ob *EVMChainClient) observeInTX() error {
 		}
 	}()
 	// ============= end of query the incoming tx to TSS address ==============
+	ob.logger.ExternalChainWatcher.Info().Msgf("Set LastBlockHeight to %d", toBlock)
 	ob.SetLastBlockHeight(toBlock)
 	if err := ob.db.Save(clienttypes.ToLastBlockSQLType(ob.GetLastBlockHeight())).Error; err != nil {
 		ob.logger.ExternalChainWatcher.Error().Err(err).Msg("error writing toBlock to db")

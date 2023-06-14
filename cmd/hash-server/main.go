@@ -19,6 +19,7 @@ type OutTxDigestRequest struct {
 	ChainID        int64  `json:"chainID"`
 	Nonce          uint64 `json:"nonce"`
 	CoinType       string `json:"coinType"`
+	Status         int64  `json:"status"`
 }
 
 type OutTxDigestResponse struct {
@@ -33,8 +34,16 @@ func (h *HashService) OutTxDigest(_ *http.Request, outtx *OutTxDigestRequest, re
 		return fmt.Errorf("invalid coin type: %s", outtx.CoinType)
 	}
 	amount := math.NewUintFromString(outtx.Amount)
+	var receiverStatus common.ReceiveStatus
+	if outtx.Status == 0 {
+		receiverStatus = common.ReceiveStatus_Failed
+	} else if outtx.Status == 1 {
+		receiverStatus = common.ReceiveStatus_Success
+	} else {
+		return fmt.Errorf("invalid status")
+	}
 
-	msg := types.NewMsgReceiveConfirmation("", outtx.SendHash, outtx.OutTxHash, outtx.OutBlockHeight, amount, common.ReceiveStatus_Failed, outtx.ChainID, outtx.Nonce, common.CoinType(coinType))
+	msg := types.NewMsgReceiveConfirmation("", outtx.SendHash, outtx.OutTxHash, outtx.OutBlockHeight, amount, receiverStatus, outtx.ChainID, outtx.Nonce, common.CoinType(coinType))
 	*result = OutTxDigestResponse{
 		Digest: msg.Digest(),
 	}

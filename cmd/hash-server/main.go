@@ -70,8 +70,19 @@ func main() {
 	rpcServer.RegisterService(hashService, "hash")
 
 	router := mux.NewRouter()
-	router.Handle("/out_tx_digest", rpcServer)
+	router.Handle("/out_tx_digest", disableCORS(rpcServer))
 	port := 9001
 	fmt.Printf("Listening on port %d\n", port)
 	http.ListenAndServe(fmt.Sprintf(":%d", port), router)
+}
+
+// Disable CORS by setting required headers in the response
+func disableCORS(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+
+		h.ServeHTTP(w, r)
+	})
 }

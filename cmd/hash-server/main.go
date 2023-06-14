@@ -44,7 +44,7 @@ func (h *HashService) OutTxDigest(_ *http.Request, outtx *OutTxDigestRequest, re
 // to test, create a file with content:
 //
 //	{
-//	 "method": "hash.HashOutTxTransaction",
+//	 "method": "hash.OutTxDigest",
 //	 "params": [{
 //	     "sendHash": "0x598fdd00ef3e0c62f65b388095c7e1f87795908da002962e0a27a2113e10ce32",
 //	     "outTxHash": "0xb8c8707dc8e90673dcde2c4799a2c0d35acc1b43a8b3f93c9d9661b715cac193",
@@ -71,5 +71,7 @@ func main() {
 
 	router := mux.NewRouter()
 	router.Handle("/out_tx_digest", rpcServer)
-	http.ListenAndServe(":9001", router)
+	port := 9001
+	fmt.Printf("Listening on port %d\n", port)
+	http.ListenAndServe(fmt.Sprintf(":%d", port), router)
 }

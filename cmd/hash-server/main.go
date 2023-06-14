@@ -18,7 +18,7 @@ type OutTxDigestRequest struct {
 	Amount         string `json:"amount"`
 	ChainID        int64  `json:"chainID"`
 	Nonce          uint64 `json:"nonce"`
-	CoinType       string `json:"cointType"`
+	CoinType       string `json:"coinType"`
 }
 
 type OutTxDigestResponse struct {
@@ -52,7 +52,7 @@ func (h *HashService) OutTxDigest(_ *http.Request, outtx *OutTxDigestRequest, re
 //	     "amount": "0",
 //	     "chainId": 97,
 //	     "nonce": 0,
-//	     "cointType": "Zeta"
+//	     "coinType": "Zeta"
 //	 }],
 //	 "id": 1
 //	}

@@ -67,7 +67,7 @@ echo "hand inmate canvas head lunar naive increase recycle dog ecology inhale de
 
 
 zetacored add-observer-list standalone-network/observers.json --keygen-block=0
-zetacored gentx zeta 1000000000000000000000000azeta --chain-id=localnet_101-1 --keyring-backend=test
+zetacored gentx zeta 1000000000000000000000azeta --chain-id=$CHAINID --keyring-backend=$KEYRING
 
 echo "Collecting genesis txs..."
 zetacored collect-gentxs

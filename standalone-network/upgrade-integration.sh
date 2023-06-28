@@ -1,5 +1,4 @@
 clibuilder()
-
 {
    echo ""
    echo "Usage: $0 -u UpgradeName -c CurrentBinary -n NewBinary"
@@ -26,6 +25,7 @@ then
 fi
 
 KEYRING=test
+CHAINID="localnet_101-1"
 export DAEMON_HOME=$HOME/.zetacored
 export DAEMON_NAME=zetacored
 export DAEMON_ALLOW_DOWNLOAD_BINARIES=true
@@ -64,13 +64,11 @@ echo "Generating deterministic account - zeta"
 echo "race draft rival universe maid cheese steel logic crowd fork comic easy truth drift tomorrow eye buddy head time cash swing swift midnight borrow" | zetacored keys add zeta --algo secp256k1 --recover --keyring-backend=test
 echo "Generating deterministic account - mario"
 echo "hand inmate canvas head lunar naive increase recycle dog ecology inhale december wide bubble hockey dice worth gravity ketchup feed balance parent secret orchard" | zetacored keys add mario --algo secp256k1 --recover --keyring-backend=test
-echo "lounge supply patch festival retire duck foster decline theme horror decline poverty behind clever harsh layer primary syrup depart fantasy session fossil dismiss east" | zetacored keys add executer_zeta --recover --keyring-backend=$KEYRING --algo secp256k1
-echo "debris dumb among crew celery derive judge spoon road oyster dad panic adult song attack net pole merge mystery pig actual penalty neither peasant"| zetacored keys add executer_mario --algo=secp256k1 --recover --keyring-backend=$KEYRING
 
 
 
 zetacored add-observer-list standalone-network/observers.json --keygen-block=0
-zetacored gentx zeta 1000000000000000000000azeta --chain-id=localnet_101-1 --keyring-backend=test
+zetacored gentx zeta 1000000000000000000000azeta --chain-id=$CHAINID --keyring-backend=$KEYRING
 
 echo "Collecting genesis txs..."
 zetacored collect-gentxs
@@ -110,11 +108,10 @@ echo "${contents}" > $DAEMON_HOME/config/genesis.json
 # Add state data here if required
 
 cosmovisor start --home ~/.zetacored/ --p2p.laddr 0.0.0.0:27655  --grpc.address 0.0.0.0:9096 --grpc-web.address 0.0.0.0:9093 --address tcp://0.0.0.0:27659 --rpc.laddr tcp://127.0.0.1:26657 >> zetanode.log 2>&1  &
-
-sleep 7
-zetacored tx gov submit-proposal software-upgrade $UpgradeName --from zeta --deposit 100000000azeta --upgrade-height 6 --title $UpgradeName --description $UpgradeName --keyring-backend test --chain-id localnet_101-1 --yes
-sleep 7
-zetacored tx gov vote 1 yes --from zeta --keyring-backend test --chain-id localnet_101-1 --yes
+sleep 8
+zetacored tx gov submit-legacy-proposal software-upgrade $UpgradeName --from zeta --deposit 100000000azeta --upgrade-height 6 --title $UpgradeName --description $UpgradeName --keyring-backend test --chain-id localnet_101-1 --yes --no-validate --fees=200azeta --broadcast-mode block
+sleep 8
+zetacored tx gov vote 1 yes --from zeta --keyring-backend test --chain-id localnet_101-1 --yes --fees=200azeta --broadcast-mode block
 clear
 sleep 7
 zetacored query gov proposal 1

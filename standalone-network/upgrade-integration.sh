@@ -25,6 +25,7 @@ then
 fi
 
 KEYRING=test
+CHAINID="localnet_101-1"
 export DAEMON_HOME=$HOME/.zetacored
 export DAEMON_NAME=zetacored
 export DAEMON_ALLOW_DOWNLOAD_BINARIES=true

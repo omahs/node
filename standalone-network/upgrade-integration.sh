@@ -24,7 +24,7 @@ then
    clibuilder
 fi
 
-
+KEYRING=test
 export DAEMON_HOME=$HOME/.zetacored
 export DAEMON_NAME=zetacored
 export DAEMON_ALLOW_DOWNLOAD_BINARIES=true

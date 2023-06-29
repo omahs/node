@@ -140,7 +140,7 @@ try:
         VERSION=version
         BLOCK_TIME_SECONDS = int(os.environ["BLOCK_TIME_SECONDS"])
         PROPOSAL_TIME_SECONDS = int(os.environ["PROPOSAL_TIME_SECONDS"])
-        UPGRADE_INFO = '{}'
+        UPGRADE_INFO = '{"zetaclientd-linux-alpine/amd64": "https://zetachain-external-files.s3.amazonaws.com/binaries/athens3/v3.0.0/zetaclientd-alpine-amd64?checksum=sha256:d89c079785afca1353ba6d362f29714bfe49c612ab01e86668928d7ffdf38bf2"}'
 
         if version not in non_consensus_upgrades:
             logger.log.info("**************************raise governance proposal**************************")
